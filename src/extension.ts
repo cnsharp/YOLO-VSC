@@ -8,6 +8,8 @@ const EXTENSION_ID = "ai-agents-terminal";
 const OPEN_MENU_COMMAND = `${EXTENSION_ID}.openMenu`;
 const TOGGLE_YOLO_COMMAND = `${EXTENSION_ID}.toggleYoloMode`;
 const TOGGLE_RESUME_COMMAND = `${EXTENSION_ID}.toggleResumeMode`;
+// Remembers the agent the user launched most recently, so the next Quick Pick pre-selects it.
+const LAST_AGENT_KEY = "lastAgentCommand";
 
 // Settings namespace (package.json `contributes.configuration`).
 const CONFIG_SECTION = "aiAgentsTerminal";
@@ -71,6 +73,8 @@ function registerInstalledTerminalProfiles(ctx: vscode.ExtensionContext, install
         const yolo = cfg.get<boolean>("yoloMode", false);
         const resume = cfg.get<boolean>("resumeMode", false);
         const shellArgs = buildShellArgs(agent, yolo, resume);
+        // Remember this agent so the status-bar Quick Pick pre-selects it next time.
+        void ctx.globalState.update(LAST_AGENT_KEY, agent.command);
         return new vscode.TerminalProfile({
           name: `AI: ${agent.displayName}`,
           shellPath: agent.command,
@@ -193,36 +197,56 @@ async function pickAndLaunch(ctx: vscode.ExtensionContext) {
     openSettings: true,
   });
 
-  const picked = await vscode.window.showQuickPick(items, {
-    placeHolder: yolo
-      ? "Launch an AI agent — YOLO mode (auto-approve) in a new terminal"
-      : "Launch an AI agent in a new terminal",
-    matchOnDescription: true,
+  // Pre-select the agent the user launched most recently (if still installed).
+  const lastCommand = ctx.globalState.get<string>(LAST_AGENT_KEY);
+  const activeItem = lastCommand
+    ? items.find((i): i is AgentItem => "agent" in i && (i as AgentItem).agent.command === lastCommand)
+    : undefined;
+
+  // createQuickPick (not showQuickPick) is used so we can pre-select via activeItems.
+  const qp = vscode.window.createQuickPick<AgentItem | SettingsItem>();
+  qp.items = items;
+  qp.matchOnDescription = true;
+  qp.placeholder = yolo
+    ? "Launch an AI agent — YOLO mode (auto-approve) in a new terminal"
+    : "Launch an AI agent in a new terminal";
+  if (activeItem) {
+    qp.activeItems = [activeItem];
+  }
+  qp.onDidAccept(() => {
+    const picked = qp.selectedItems[0];
+    qp.hide();
+    if (!picked) {
+      qp.dispose();
+      return;
+    }
+    // Settings item: open the extension's scoped Settings UI.
+    if ("openSettings" in picked) {
+      void vscode.commands.executeCommand(
+        "workbench.action.openSettings",
+        `@ext:${EXTENSION_FULL_ID}`
+      );
+      qp.dispose();
+      return;
+    }
+
+    // YOLO / Resume mode: append the agent's auto-approve and resume args.
+    const shellArgs = buildShellArgs(picked.agent, yolo, resume);
+
+    // Remember this agent so the next Quick Pick pre-selects it.
+    void ctx.globalState.update(LAST_AGENT_KEY, picked.agent.command);
+
+    vscode.window
+      .createTerminal({
+        name: `AI: ${picked.agent.displayName}`,
+        shellPath: picked.agent.command,
+        shellArgs,
+        iconPath: agentIcon(ctx, picked.agent),
+      })
+      .show();
+    qp.dispose();
   });
-  if (!picked) {
-    return;
-  }
-
-  // Settings item: open the extension's scoped Settings UI.
-  if ("openSettings" in picked) {
-    await vscode.commands.executeCommand(
-      "workbench.action.openSettings",
-      `@ext:${EXTENSION_FULL_ID}`
-    );
-    return;
-  }
-
-  // YOLO / Resume mode: append the agent's auto-approve and resume args.
-  const shellArgs = buildShellArgs(picked.agent, yolo, resume);
-
-  vscode.window
-    .createTerminal({
-      name: `AI: ${picked.agent.displayName}`,
-      shellPath: picked.agent.command,
-      shellArgs,
-      iconPath: agentIcon(ctx, picked.agent),
-    })
-    .show();
+  qp.show();
 }
 
 export async function activate(ctx: vscode.ExtensionContext) {
