@@ -34,31 +34,31 @@
 ### YOLO 模式（自动放行）
 
 - 点击状态栏 `Y` 按钮，或快捷键 `Ctrl+Alt+Y`（macOS `Cmd+Alt+Y`）。
-- 开启后按钮高亮；启动 agent 时自动附加该 agent 的 `yoloArgs`。
+- 开启后按钮高亮；启动 agent 时自动附加该 agent 的 `skipFlag`。
 
 ### Resume 模式（继续会话）
 
 - 点击状态栏历史按钮 `$(history)`，或快捷键 `Ctrl+Alt+R`（macOS `Cmd+Alt+R`）。
 - 开启后按钮高亮；启动 agent 时自动附加该 agent 在 `agents.json` 里定义的 `resumeFlag`（例如 Claude `-r`、Codex `--resume`、Cursor `--resume`），从而继续上一次会话。没有 `resumeFlag` 的 agent（如 Continue、Kimi、Qoder）即使开启也不会附加任何参数。
-- YOLO 与 Resume 可同时开启，参数顺序为 `baseArgs` → `yoloArgs` → `resumeFlag`。
+- YOLO 与 Resume 可同时开启，参数顺序为 `baseArgs` → `skipFlag` → `resumeFlag`。
 
 ### 配置 agent（无需改代码）
 
 设置项 **`aiAgentsTerminal.agents`** 是与 `agents.json` 内置目录**合并**的覆盖 / 新增列表：按 `command` 匹配内置项进行覆盖（只改你填的字段）；把 `enabled` 设为 `false` 可隐藏某内置项；用一个不在 `agents.json` 里的 `command` 即可新增自定义 agent。
 
 - **编辑**：内置项都在仓库根 `agents.json` 里；要改某内置项，在设置里追加一条同 `command` 的覆盖条目（只写要改的字段即可）。
-- **覆盖参数**：只改要改的字段，例如把 `claude` 的 `yoloArgs` 改成 `["--new-flag"]`。
+- **覆盖参数**：只改要改的字段，例如把 `claude` 的 `skipFlag` 改成 `"--new-flag"`。
 - **隐藏**：删除该条目，或保留条目并把 `enabled` 设为 `false`。
 - **添加自定义 agent**：追加一条 `command` 不在内置列表里的条目，例如：
 
   ```json
-  { "command": "myagent", "displayName": "My Agent", "baseArgs": ["run"], "iconFile": "myagent.png" }
+  { "command": "myagent", "displayName": "My Agent", "baseArgs": "run", "iconFile": "myagent.png" }
   ```
 
   （省略 `iconFile` 则使用默认终端图标。）
 - **生效时机**：改动在下次打开下拉时生效（运行时实时读取，无需重载窗口）。
 
-字段：`command`（必填）/ `displayName` / `baseArgs` / `yoloArgs` / `resumeFlag` / `iconFile` / `enabled` / `id`。
+字段：`command`（必填）/ `displayName` / `baseArgs` / `skipFlag` / `resumeFlag` / `iconFile` / `enabled` / `id`。
 
 > 唯一性：`command`、`displayName`、`id` 三者各自必须唯一；发现重复时扩展会提示并丢弃重复项（保留首次出现）。
 
@@ -97,7 +97,7 @@
 
 | 设置 | 类型 | 默认 | 说明 |
 |---|---|---|---|
-| `aiAgentsTerminal.yoloMode` | boolean | `false` | YOLO 总开关；开启后启动 agent 附加各自 `yoloArgs` |
+| `aiAgentsTerminal.yoloMode` | boolean | `false` | YOLO 总开关；开启后启动 agent 附加各自 `skipFlag` |
 | `aiAgentsTerminal.resumeMode` | boolean | `false` | Resume 总开关；开启后启动 agent 附加各自 `resumeFlag` |
 | `aiAgentsTerminal.agents` | array | `[]` | 与 agents.json 合并的覆盖 / 新增（见上） |
 | `aiAgentsTerminal.installedAgents` | array（隐藏） | `[]` | 已探测到的 agent 命令缓存，自动维护，**勿手动修改** |
@@ -147,7 +147,7 @@ ai-agents-vsc/
 
 ### 架构要点
 
-1. **启动器（状态栏）**：`activate()` 先刷新“已安装”缓存（`refreshInstalledCache`，跨窗口只探测一次 PATH），状态栏 `✨ AI Agents` 按钮打开 Quick Pick，只列缓存中已安装的 agent；选取后用 `vscode.window.createTerminal` 以 agent 的 `command` + `baseArgs`（YOLO 时附加 `yoloArgs`）启动，并带上 logo 图标。
+1. **启动器（状态栏）**：`activate()` 先刷新“已安装”缓存（`refreshInstalledCache`，跨窗口只探测一次 PATH），状态栏 `✨ AI Agents` 按钮打开 Quick Pick，只列缓存中已安装的 agent；选取后用 `vscode.window.createTerminal` 以 agent 的 `command` + `baseArgs`（YOLO 时附加 `skipFlag`）启动，并带上 logo 图标。
 2. **已安装探测**：`isInstalled(command)` 在登录交互式 shell 中执行 `<command> --version`，退出码 0 视为已安装；结果缓存进全局设置 `installedAgents`，避免每个窗口重复探测 PATH。`agentDetector.ts` 在 macOS/Linux 用 `$SHELL -lc`、Windows 用 `where`，因此能识别 rc 文件注入的 PATH（nvm / fnm / brew / npm-global 等）。
 3. **终端 profile（按安装过滤）**：`registerInstalledTerminalProfiles()` 对**已安装**的 agent 逐个注册 `TerminalProfileProvider`，因此 `Terminal: Select Default Profile` 里只出现装了的，未装的不会列出。这是相对 `contributes.terminal.profiles` 静态声明（无法按安装过滤）的改进。
 4. **设置驱动**：`resolveAgents()` 把 `agents.json` 内置目录与 `aiAgentsTerminal.agents` 设置按 `command` 合并，并做 `command` / `displayName` / `id` 唯一性校验（`getAgentConfigWarnings` 输出告警）。
@@ -161,14 +161,14 @@ ai-agents-vsc/
 在 `settings.json` 的 `aiAgentsTerminal.agents` 追加一条：
 
 ```json
-{ "command": "myagent", "displayName": "My Agent", "baseArgs": [], "yoloArgs": ["--auto"], "iconFile": "myagent.png" }
+{ "command": "myagent", "displayName": "My Agent", "baseArgs": "", "skipFlag": "--auto", "iconFile": "myagent.png" }
 ```
 
 把 logo 放到 `media/agents/myagent.png` 即可，无需重新编译。
 
 **方式 B：加为内置（代码侧）**
 
-1. 编辑仓库根目录的 `agents.json`，追加一项（`id` / `command` / `displayName` / `baseArgs` / `yoloArgs` / `iconFile`）。
+1. 编辑仓库根目录的 `agents.json`，追加一项（`id` / `command` / `displayName` / `baseArgs` / `skipFlag` / `iconFile`）。
 2. 把对应 PNG 放进 `media/agents/`。
 3. `npm run compile` 后重载窗口。
 

@@ -57,14 +57,16 @@
                 "description": "Name shown in the launcher. Defaults to `command` for custom agents."
               },
               "baseArgs": {
-                "type": "array",
-                "items": { "type": "string" },
-                "description": "Arguments passed before the agent's subcommand."
+                "type": "string",
+                "description": "Space-separated arguments passed before the agent's subcommand (e.g. \"--auto-approve true\")."
               },
-              "yoloArgs": {
-                "type": "array",
-                "items": { "type": "string" },
-                "description": "Extra args appended when YOLO (auto-approve) mode is on."
+              "skipFlag": {
+                "type": "string",
+                "description": "Flag appended when YOLO (auto-approve) mode is on (e.g. \"--dangerously-skip-permissions\", \"-y\")."
+              },
+              "resumeFlag": {
+                "type": "string",
+                "description": "Flag appended when Resume mode is on to continue the most recent session (e.g. \"-r\", \"--resume\")."
               },
               "iconFile": {
                 "type": "string",

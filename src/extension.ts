@@ -40,15 +40,21 @@ async function detectInstalled(agents: AgentDef[]): Promise<AgentDef[]> {
   return results.filter((a): a is AgentDef => a !== null);
 }
 
+/** Split a space-separated args string into tokens (mirrors how IDEA parses
+ *  its skipFlag / baseArgs / resumeFlag). Empty string => no tokens. */
+function splitArgs(s: string | undefined): string[] {
+  return (s ?? "").split(/\s+/).filter(Boolean);
+}
+
 /** Build the shell args for launching an agent, honouring YOLO and Resume mode.
- *  Resume flag is appended last so it applies on top of base + YOLO args. */
+ *  Resume flag is appended last so it applies on top of base + skip args. */
 function buildShellArgs(agent: AgentDef, yolo: boolean, resume: boolean): string[] {
-  const args = [...agent.baseArgs];
-  if (yolo) {
-    args.push(...(agent.yoloArgs ?? []));
+  const args = splitArgs(agent.baseArgs);
+  if (yolo && agent.skipFlag) {
+    args.push(...splitArgs(agent.skipFlag));
   }
   if (resume && agent.resumeFlag) {
-    args.push(...agent.resumeFlag.split(/\s+/).filter(Boolean));
+    args.push(...splitArgs(agent.resumeFlag));
   }
   return args;
 }

@@ -6,9 +6,10 @@ export interface AgentDef {
   /** Binary launched in the terminal (also used for PATH detection). */
   readonly command: string;
   readonly displayName: string;
-  readonly baseArgs: string[];
-  /** Args appended when "YOLO mode" (auto-approve) is enabled in settings. */
-  readonly yoloArgs?: string[];
+  /** Base args prepended to every launch (space-separated string, split at runtime). */
+  readonly baseArgs: string;
+  /** Flag appended when "YOLO mode" (auto-approve) is enabled in settings. */
+  readonly skipFlag?: string;
   /** Flag appended when "Resume mode" is on, to continue the most recent session. */
   readonly resumeFlag?: string;
   /** Icon filename under media/agents. Optional — falls back to a default terminal icon. */
@@ -24,8 +25,8 @@ export interface AgentDef {
 export interface AgentConfig {
   command: string;
   displayName?: string;
-  baseArgs?: string[];
-  yoloArgs?: string[];
+  baseArgs?: string;
+  skipFlag?: string;
   iconFile?: string;
   /** Flag appended when "Resume mode" is on (e.g. `-r`, `--resume`). */
   resumeFlag?: string;
@@ -118,8 +119,8 @@ function buildAgents(): { agents: AgentDef[]; warnings: string[] } {
       id,
       command: cfg.command,
       displayName: name,
-      baseArgs: cfg.baseArgs ?? [],
-      yoloArgs: cfg.yoloArgs,
+      baseArgs: cfg.baseArgs ?? "",
+      skipFlag: cfg.skipFlag,
       resumeFlag: cfg.resumeFlag,
       iconFile: cfg.iconFile,
     });

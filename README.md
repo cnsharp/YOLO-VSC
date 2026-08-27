@@ -34,31 +34,31 @@ Launch the AI CLI coding assistants installed on your machine (Claude Code / Cod
 ### YOLO mode (auto-approve)
 
 - Click the `Y` status-bar button, or use `Ctrl+Alt+Y` (`Cmd+Alt+Y` on macOS).
-- When on, the button highlights; launching an agent automatically appends that agent's `yoloArgs`.
+- When on, the button highlights; launching an agent automatically appends that agent's `skipFlag`.
 
 ### Resume mode (continue session)
 
 - Click the history `$(history)` status-bar button, or use `Ctrl+Alt+R` (`Cmd+Alt+R` on macOS).
 - When on, the button highlights; launching an agent automatically appends that agent's `resumeFlag` from `agents.json` (e.g. Claude `-r`, Codex `--resume`, Cursor `--resume`), continuing the previous session. Agents without a `resumeFlag` (e.g. Continue, Kimi, Qoder) append nothing even when on.
-- YOLO and Resume can be on together; args are ordered `baseArgs` → `yoloArgs` → `resumeFlag`.
+- YOLO and Resume can be on together; args are ordered `baseArgs` → `skipFlag` → `resumeFlag`.
 
 ### Configure agents (no code required)
 
 The **`aiAgentsTerminal.agents`** setting is a list of overrides / additions **merged** with the built-in catalog in `agents.json`: match a built-in by `command` to override it (only the fields you set are replaced); set `enabled` to `false` to hide a built-in; use a `command` not present in `agents.json` to add a custom agent.
 
 - **Edit**: the built-ins live in the root `agents.json`; to tweak a built-in, append an override entry with the same `command` (only the fields you want to change).
-- **Override params**: change only the fields you want, e.g. set `claude`'s `yoloArgs` to `["--new-flag"]`.
+- **Override params**: change only the fields you want, e.g. set `claude`'s `skipFlag` to `"--new-flag"`.
 - **Hide**: delete the entry, or keep it and set `enabled` to `false`.
 - **Add a custom agent**: append an entry whose `command` isn't built-in, e.g.:
 
   ```json
-  { "command": "myagent", "displayName": "My Agent", "baseArgs": ["run"], "iconFile": "myagent.png" }
+  { "command": "myagent", "displayName": "My Agent", "baseArgs": "run", "iconFile": "myagent.png" }
   ```
 
   (omit `iconFile` to use the default terminal icon.)
 - **When it takes effect**: changes apply the next time the picker opens (read live at runtime, no window reload needed).
 
-Fields: `command` (required) / `displayName` / `baseArgs` / `yoloArgs` / `resumeFlag` / `iconFile` / `enabled` / `id`.
+Fields: `command` (required) / `displayName` / `baseArgs` / `skipFlag` / `resumeFlag` / `iconFile` / `enabled` / `id`.
 
 > Uniqueness: `command`, `displayName`, and `id` must each be unique. On duplicates the extension warns and drops the duplicate (keeping the first occurrence).
 
@@ -97,7 +97,7 @@ Each **installed** agent is registered at runtime as a Terminal profile via `reg
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
-| `aiAgentsTerminal.yoloMode` | boolean | `false` | Master switch for YOLO mode; when on, agents launch with their respective `yoloArgs` |
+| `aiAgentsTerminal.yoloMode` | boolean | `false` | Master switch for YOLO mode; when on, agents launch with their respective `skipFlag` |
 | `aiAgentsTerminal.resumeMode` | boolean | `false` | Master switch for Resume mode; when on, agents launch with their respective `resumeFlag` |
 | `aiAgentsTerminal.agents` | array | `[]` | Overrides / additions merged with agents.json (see above) |
 | `aiAgentsTerminal.installedAgents` | array (hidden) | `[]` | Cache of detected agent commands, maintained automatically — **do not edit by hand** |
@@ -148,7 +148,7 @@ ai-agents-vsc/
 
 ### Architecture notes
 
-1. **Launcher (status bar)**: `activate()` first refreshes the installed cache (`refreshInstalledCache`, probing PATH only once across windows), the `✨ AI Agents` button opens a Quick Pick listing only cached installed agents, and selection launches via `vscode.window.createTerminal` using the agent's `command` + `baseArgs` (plus `yoloArgs` in YOLO mode), with the logo icon.
+1. **Launcher (status bar)**: `activate()` first refreshes the installed cache (`refreshInstalledCache`, probing PATH only once across windows), the `✨ AI Agents` button opens a Quick Pick listing only cached installed agents, and selection launches via `vscode.window.createTerminal` using the agent's `command` + `baseArgs` (plus `skipFlag` in YOLO mode), with the logo icon.
 2. **Install detection**: `isInstalled(command)` runs `<command> --version` in a login-interactive shell, treating exit code 0 as installed; results are cached in the global `installedAgents` setting so PATH isn't re-probed per window. `agentDetector.ts` uses `$SHELL -lc` on macOS/Linux and `where` on Windows, so it honours PATH injected by rc files (nvm / fnm / brew / npm-global, etc.).
 3. **Terminal profiles (install-filtered)**: `registerInstalledTerminalProfiles()` registers a `TerminalProfileProvider` per **installed** agent, so `Terminal: Select Default Profile` lists only what's installed; uninstalled agents never appear. This improves on the static `contributes.terminal.profiles` declaration, which can't filter by install status.
 4. **Settings-driven**: `resolveAgents()` merges the `agents.json` built-in catalog with the `aiAgentsTerminal.agents` setting by `command`, and validates `command` / `displayName` / `id` uniqueness (`getAgentConfigWarnings` emits the warnings).
@@ -162,14 +162,14 @@ Two paths, depending on whether you want to ship code:
 Append an entry to `aiAgentsTerminal.agents` in your `settings.json`:
 
 ```json
-{ "command": "myagent", "displayName": "My Agent", "baseArgs": [], "yoloArgs": ["--auto"], "iconFile": "myagent.png" }
+{ "command": "myagent", "displayName": "My Agent", "baseArgs": "", "skipFlag": "--auto", "iconFile": "myagent.png" }
 ```
 
 Drop the logo into `media/agents/myagent.png` — no recompile needed.
 
 **Path B: add as a built-in (code-side)**
 
-1. Edit the root `agents.json` and append an entry (`id` / `command` / `displayName` / `baseArgs` / `yoloArgs` / `iconFile`).
+1. Edit the root `agents.json` and append an entry (`id` / `command` / `displayName` / `baseArgs` / `skipFlag` / `iconFile`).
 2. Put the corresponding PNG into `media/agents/`.
 3. `npm run compile`, then reload the window.
 

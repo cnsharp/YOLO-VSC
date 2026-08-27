@@ -26,7 +26,9 @@ The **overlapping concepts** — the agents override list, Resume mode, YOLO/ski
 cache — should use the **same schema structure** in both products so users get one mental model:
 - The user-override setting (`aiAgentsTerminal.agents` / `yolo.agents`) uses the **same strict item
   shape**: `required: ["command"]`, `additionalProperties: false`, fields `command`, `displayName`,
-  `baseArgs` (array), `yoloArgs` (array), `resumeFlag`, `iconFile`, `enabled`, `id`.
+  `baseArgs` (string, space-separated), `skipFlag` (string), `resumeFlag` (string), `iconFile`, `enabled`, `id`.
+  (`skipFlag` is the auto-approve / YOLO flag; it matches the IDEA product's `skipFlag` naming, while the
+  older VS Code name `yoloArgs` is retired.)
 - Both also expose `resumeMode` and a skip/auto-approve toggle (`yoloMode` / `skipEnabled`).
 
 ## `agents.json` is the shared catalog (single source of truth)
