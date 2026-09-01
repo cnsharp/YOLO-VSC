@@ -7,7 +7,7 @@ Launch the AI CLI coding assistants installed on your machine (Claude Code / Cod
 - **Status-bar launcher**: a `✨ AI Agents` button at bottom-right → opens a Quick Pick listing only the agents **installed** on PATH (with logos); pick one to open it in a new terminal tab.
 - **YOLO mode**: toggle via the `Y` status-bar button or the `Ctrl/Cmd+Alt+Y` shortcut; when on, each agent launches with its own auto-approve args (e.g. Claude's `--dangerously-skip-permissions`).
 - **Resume mode**: toggle via the history `$(history)` status-bar button or the `Ctrl/Cmd+Alt+R` shortcut; when on, each agent launches with its own `resumeFlag` (e.g. Claude's `-r`) to continue the most recent session.
-- **Data-driven**: 18 built-in agents (defined in the root `agents.json`) ship by default; override params, hide, or add custom agents from Settings — no code changes needed.
+- **Data-driven**: the built-in agents (defined in the root `agents.json`) ship by default; override params, hide, or add custom agents from Settings — no code changes needed.
 - **Terminal profiles**: installed agents are registered as Terminal profiles, surfacing in `Terminal: Select Default Profile` (filtered by install status, can be set as the default terminal).
 
 ## Install
@@ -62,7 +62,7 @@ Fields: `command` (required) / `displayName` / `baseArgs` / `skipFlag` / `resume
 
 > Uniqueness: `command`, `displayName`, and `id` must each be unique. On duplicates the extension warns and drops the duplicate (keeping the first occurrence).
 
-### Built-in agent list (18)
+### Built-in agent list
 
 | id | display name | command (PATH detection) | logo |
 |---|---|---|---|
@@ -173,7 +173,7 @@ Drop the logo into `media/agents/myagent.png` — no recompile needed.
 2. Put the corresponding PNG into `media/agents/`.
 3. `npm run compile`, then reload the window.
 
-> Note: the runtime setting is authoritative. If a user has overridden `aiAgentsTerminal.agents`, a newly added built-in only appears once they also add it to their setting (or remove the override to restore the default 18).
+> Note: the runtime setting is authoritative. If a user has overridden `aiAgentsTerminal.agents`, a newly added built-in only appears once they also add it to their setting (or remove the override to restore the defaults).
 
 ### Platform limitations (not a code bug)
 

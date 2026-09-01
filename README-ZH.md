@@ -7,7 +7,7 @@
 - **状态栏启动器**：右下角 `✨ AI Agents` 按钮 → 弹出 Quick Pick，只列出 PATH 上**已安装**的 agent（带 logo），点选即在终端标签页打开。
 - **YOLO 模式**：状态栏 `Y` 按钮或快捷键 `Ctrl/Cmd+Alt+Y` 切换；开启后启动 agent 时自动附加各自的自动放行参数（如 Claude 的 `--dangerously-skip-permissions`）。
 - **Resume 模式**：状态栏历史按钮 `$(history)` 或快捷键 `Ctrl/Cmd+Alt+R` 切换；开启后启动 agent 时自动附加各自的 `resumeFlag`（如 Claude 的 `-r`），继续最近的会话。
-- **数据驱动**：内置 18 个 agent（定义在仓库根 `agents.json`），可在设置里覆盖参数 / 隐藏 / 添加自定义 agent，无需改代码。
+- **数据驱动**：内置 agent（定义在仓库根 `agents.json`），可在设置里覆盖参数 / 隐藏 / 添加自定义 agent，无需改代码。
 - **终端 profile**：已安装的 agent 会注册为 Terminal profile，出现在 `Terminal: Select Default Profile`（可按安装过滤，用作默认终端）。
 
 ## 安装
@@ -62,7 +62,7 @@
 
 > 唯一性：`command`、`displayName`、`id` 三者各自必须唯一；发现重复时扩展会提示并丢弃重复项（保留首次出现）。
 
-### 内置 agent 列表（18）
+### 内置 agent 列表
 
 | id | 显示名 | 命令 (PATH 探测) | logo |
 |---|---|---|---|
@@ -172,7 +172,7 @@ ai-agents-vsc/
 2. 把对应 PNG 放进 `media/agents/`。
 3. `npm run compile` 后重载窗口。
 
-> 注意：运行期设置是权威来源。若用户已覆盖 `aiAgentsTerminal.agents`，内置新增项需用户在其设置里也加一条（或删除覆盖以恢复默认 18 个）。
+> 注意：运行期设置是权威来源。若用户已覆盖 `aiAgentsTerminal.agents`，内置新增项需用户在其设置里也加一条（或删除覆盖以恢复默认）。
 
 ### 平台限制（非代码 bug）
 
