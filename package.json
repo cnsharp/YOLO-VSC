@@ -2,13 +2,13 @@
   "name": "ai-agents-terminal",
   "displayName": "AI Agents Terminal",
   "description": "Launch installed AI CLI agents from a status-bar launcher (opens in a terminal)",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "publisher": "cnsharpstudio",
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Other"
+    "AI"
   ],
   "activationEvents": [
     "onStartupFinished"
