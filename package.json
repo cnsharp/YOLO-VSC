@@ -137,7 +137,7 @@
       {
         "command": "ai-agents-terminal.openMenu",
         "title": "AI Agents",
-        "icon": "$(sparkle)"
+        "icon": "$(robot)"
       },
       {
         "command": "ai-agents-terminal.toggleYoloMode",
@@ -147,7 +147,7 @@
       {
         "command": "ai-agents-terminal.toggleResumeMode",
         "title": "AI Agents: Toggle Resume Mode",
-        "icon": "$(history)"
+        "icon": "R"
       }
     ]
   },

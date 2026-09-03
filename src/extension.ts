@@ -331,7 +331,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
     launcherSb.tooltip = yolo
       ? "Launch an AI agent (YOLO / auto-approve) in a new terminal"
       : "Launch an AI agent in a new terminal";
-    launcherSb.text = `$(sparkle) AI Agents`;
+    launcherSb.text = `$(robot) AI Agents`;
     yoloSb.text = "Y";
     yoloSb.tooltip = yolo
       ? "YOLO mode ON — agents launch auto-approved. Click to turn off."
@@ -343,7 +343,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
     yoloSb.color = yolo
       ? undefined
       : new vscode.ThemeColor("statusBarItem.offForeground");
-    resumeSb.text = "$(history)";
+    resumeSb.text = "R";
     resumeSb.tooltip = resume
       ? "Resume mode ON — agents relaunch with their resume flag to continue the last session. Click to turn off."
       : "Resume mode OFF. Click to continue the last agent session.";

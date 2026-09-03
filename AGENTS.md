@@ -10,7 +10,7 @@ namespaces. Do **not** merge the branches or unify their namespaces — the dive
 
 | Branch | Product | UX | Settings namespace | Notes |
 |--------|---------|-----|--------------------|-------|
-| `main` | **AI Agents Terminal** (`ai-agents-terminal`) | Status-bar `✨ AI Agents` button → Quick Pick launcher; dynamic `TerminalProfileProvider` registration | `aiAgentsTerminal.*` | Native terminal profiles; commands `toggleYoloMode` / `toggleResumeMode`. |
+| `main` | **AI Agents Terminal** (`ai-agents-terminal`) | Status-bar `🤖 AI Agents` button → Quick Pick launcher; dynamic `TerminalProfileProvider` registration | `aiAgentsTerminal.*` | Native terminal profiles; commands `toggleYoloMode` / `toggleResumeMode`. |
 | `yolo` | **YOLO** | Docked webview panel (`yolo.panel`) + in-panel Settings view (`yolo.settings`) | `yolo.*` | Frontend in `src/webview/` (bundled by esbuild → `media/dist/`); embedded xterm terminal. |
 
 ### Intentional differences (NOT bugs to "fix")

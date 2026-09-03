@@ -4,9 +4,9 @@
 
 ## 功能
 
-- **状态栏启动器**：右下角 `✨ AI Agents` 按钮 → 弹出 Quick Pick，只列出 PATH 上**已安装**的 agent（带 logo），点选即在终端标签页打开。
+- **状态栏启动器**：右下角 `🤖 AI Agents` 按钮 → 弹出 Quick Pick，只列出 PATH 上**已安装**的 agent（带 logo），点选即在终端标签页打开。
 - **YOLO 模式**：状态栏 `Y` 按钮或快捷键 `Ctrl/Cmd+Alt+Y` 切换；开启后启动 agent 时自动附加各自的自动放行参数（如 Claude 的 `--dangerously-skip-permissions`）。
-- **Resume 模式**：状态栏历史按钮 `$(history)` 或快捷键 `Ctrl/Cmd+Alt+R` 切换；开启后启动 agent 时自动附加各自的 `resumeFlag`（如 Claude 的 `-r`），继续最近的会话。
+- **Resume 模式**：状态栏 `R` 按钮或快捷键 `Ctrl/Cmd+Alt+R` 切换；开启后启动 agent 时自动附加各自的 `resumeFlag`（如 Claude 的 `-r`），继续最近的会话。
 - **数据驱动**：内置 agent（定义在仓库根 `agents.json`），可在设置里覆盖参数 / 隐藏 / 添加自定义 agent，无需改代码。
 - **终端 profile**：已安装的 agent 会注册为 Terminal profile，出现在 `Terminal: Select Default Profile`（可按安装过滤，用作默认终端）。
 
@@ -16,7 +16,7 @@
 
 1. 安装依赖：`npm install`
 2. 编译：`npm run compile`（或 `npm run watch` 监听改动）
-3. 按 **F5** 打开“扩展开发宿主”窗口（Extension Development Host），新窗口状态栏即出现 `✨ AI Agents`。
+3. 按 **F5** 打开“扩展开发宿主”窗口（Extension Development Host），新窗口状态栏即出现 `🤖 AI Agents`。
 
 ### 打包 / 安装 VSIX
 
@@ -27,7 +27,7 @@
 
 ### 启动一个 agent
 
-- 点击状态栏右下角 `✨ AI Agents`，在 Quick Pick 中选择（只列出本机已安装的），即在新终端标签页打开。
+- 点击状态栏右下角 `🤖 AI Agents`，在 Quick Pick 中选择（只列出本机已安装的），即在新终端标签页打开。
 - 或命令面板运行 `AI Agents`（命令 id `ai-agents-terminal.openMenu`）。
 - Quick Pick 底部固定一个 `Settings` 项，可直接打开本扩展的设置页。
 
@@ -38,7 +38,7 @@
 
 ### Resume 模式（继续会话）
 
-- 点击状态栏历史按钮 `$(history)`，或快捷键 `Ctrl+Alt+R`（macOS `Cmd+Alt+R`）。
+- 点击状态栏 `R` 按钮，或快捷键 `Ctrl+Alt+R`（macOS `Cmd+Alt+R`）。
 - 开启后按钮高亮；启动 agent 时自动附加该 agent 在 `agents.json` 里定义的 `resumeFlag`（例如 Claude `-r`、Codex `--resume`、Cursor `--resume`），从而继续上一次会话。没有 `resumeFlag` 的 agent（如 Continue、Kimi、Qoder）即使开启也不会附加任何参数。
 - YOLO 与 Resume 可同时开启，参数顺序为 `baseArgs` → `skipFlag` → `resumeFlag`。
 
@@ -108,7 +108,7 @@
 |---|---|---|
 | `ai-agents-terminal.openMenu` | AI Agents | 状态栏按钮 / 命令面板 |
 | `ai-agents-terminal.toggleYoloMode` | AI Agents: Toggle YOLO Mode | `Y` 按钮 / `Ctrl+Alt+Y`（macOS `Cmd+Alt+Y`） |
-| `ai-agents-terminal.toggleResumeMode` | AI Agents: Toggle Resume Mode | `$(history)` 按钮 / `Ctrl+Alt+R`（macOS `Cmd+Alt+R`） |
+| `ai-agents-terminal.toggleResumeMode` | AI Agents: Toggle Resume Mode | `R` 按钮 / `Ctrl+Alt+R`（macOS `Cmd+Alt+R`） |
 
 ## 二次开发
 
@@ -147,7 +147,7 @@ ai-agents-vsc/
 
 ### 架构要点
 
-1. **启动器（状态栏）**：`activate()` 先刷新“已安装”缓存（`refreshInstalledCache`，跨窗口只探测一次 PATH），状态栏 `✨ AI Agents` 按钮打开 Quick Pick，只列缓存中已安装的 agent；选取后用 `vscode.window.createTerminal` 以 agent 的 `command` + `baseArgs`（YOLO 时附加 `skipFlag`）启动，并带上 logo 图标。
+1. **启动器（状态栏）**：`activate()` 先刷新“已安装”缓存（`refreshInstalledCache`，跨窗口只探测一次 PATH），状态栏 `🤖 AI Agents` 按钮打开 Quick Pick，只列缓存中已安装的 agent；选取后用 `vscode.window.createTerminal` 以 agent 的 `command` + `baseArgs`（YOLO 时附加 `skipFlag`）启动，并带上 logo 图标。
 2. **已安装探测**：`isInstalled(command)` 在登录交互式 shell 中执行 `<command> --version`，退出码 0 视为已安装；结果缓存进全局设置 `installedAgents`，避免每个窗口重复探测 PATH。`agentDetector.ts` 在 macOS/Linux 用 `$SHELL -lc`、Windows 用 `where`，因此能识别 rc 文件注入的 PATH（nvm / fnm / brew / npm-global 等）。
 3. **终端 profile（按安装过滤）**：`registerInstalledTerminalProfiles()` 对**已安装**的 agent 逐个注册 `TerminalProfileProvider`，因此 `Terminal: Select Default Profile` 里只出现装了的，未装的不会列出。这是相对 `contributes.terminal.profiles` 静态声明（无法按安装过滤）的改进。
 4. **设置驱动**：`resolveAgents()` 把 `agents.json` 内置目录与 `aiAgentsTerminal.agents` 设置按 `command` 合并，并做 `command` / `displayName` / `id` 唯一性校验（`getAgentConfigWarnings` 输出告警）。
@@ -174,7 +174,3 @@ ai-agents-vsc/
 
 > 注意：运行期设置是权威来源。若用户已覆盖 `aiAgentsTerminal.agents`，内置新增项需用户在其设置里也加一条（或删除覆盖以恢复默认）。
 
-### 平台限制（非代码 bug）
-
-- 扩展的 Terminal profile **不**出现在终端 `+` 号下拉 / 标题栏菜单，只出现在 `Terminal: Select Default Profile`（该 VS Code 构建的行为，已验证）。
-- 日常一键启动请用状态栏 `✨ AI Agents` 按钮，最稳定可靠。
