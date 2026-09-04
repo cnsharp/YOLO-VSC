@@ -10,6 +10,16 @@ Launch the AI CLI coding assistants installed on your machine (Claude Code / Cod
 - **Data-driven**: the built-in agents (defined in the root `agents.json`) ship by default; override params, hide, or add custom agents from Settings — no code changes needed.
 - **Terminal profiles**: installed agents are registered as Terminal profiles, surfacing in `Terminal: Select Default Profile` (filtered by install status, can be set as the default terminal).
 
+## Screenshots
+
+**Status bar** — `🤖 AI Agents`, `Y`, and `R` buttons in the bottom-right corner:
+
+![Status bar](media/screenshots/statusbar.png)
+
+**Quick Pick** — click `🤖 AI Agents` to choose an installed agent (logos from `agents.json`):
+
+![Quick Pick](media/screenshots/dropdown.png)
+
 ## Install
 
 ### Run from source (development / trial)

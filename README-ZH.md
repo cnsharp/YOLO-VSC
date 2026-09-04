@@ -10,6 +10,16 @@
 - **数据驱动**：内置 agent（定义在仓库根 `agents.json`），可在设置里覆盖参数 / 隐藏 / 添加自定义 agent，无需改代码。
 - **终端 profile**：已安装的 agent 会注册为 Terminal profile，出现在 `Terminal: Select Default Profile`（可按安装过滤，用作默认终端）。
 
+## 截图
+
+**状态栏**——右下角的 `🤖 AI Agents`、`Y`、`R` 按钮：
+
+![Status bar](media/screenshots/statusbar.png)
+
+**Quick Pick**——点击 `🤖 AI Agents` 选择已安装的 agent（logo 来自 `agents.json`）：
+
+![Quick Pick](media/screenshots/dropdown.png)
+
 ## 安装
 
 ### 从源码运行（开发 / 试用）

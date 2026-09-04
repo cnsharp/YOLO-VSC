@@ -1,7 +1,7 @@
 {
   "name": "ai-agents-terminal",
   "displayName": "AI Agents Terminal",
-  "description": "Launch installed AI CLI agents from a status-bar launcher (opens in a terminal)",
+  "description": "Launch the AI CLI agents installed on your machine (Claude Code / Codex / Cursor / …) from a status-bar button, with YOLO auto-approve and Resume-session toggles, terminal-profile integration, and a configurable agent catalog.",
   "version": "1.0.0",
   "publisher": "cnsharpstudio",
   "engines": {
@@ -11,6 +11,20 @@
     "AI"
   ],
   "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "claude",
+    "codex",
+    "cursor",
+    "yolo",
+    "terminal",
+    "status-bar"
+  ],
   "activationEvents": [
     "onStartupFinished"
   ],
