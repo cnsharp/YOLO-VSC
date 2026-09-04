@@ -3,7 +3,7 @@
   "displayName": "AI Agents Terminal",
   "description": "Launch the AI CLI agents installed on your machine (Claude Code / Codex / Cursor / …) from a status-bar button, with YOLO auto-approve and Resume-session toggles, terminal-profile integration, and a configurable agent catalog.",
   "version": "1.0.0",
-  "publisher": "cnsharpstudio",
+  "publisher": "cnsharp",
   "repository": {
     "type": "git",
     "url": "https://github.com/cnsharp/ai-agents-terminal-vsc.git"
