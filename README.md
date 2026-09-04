@@ -1,5 +1,7 @@
 # AI Agents Terminal
 
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/cnsharp.ai-agents-terminal?label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=cnsharp.ai-agents-terminal)
+
 Launch the AI CLI coding assistants installed on your machine (Claude Code / Codex / Cursor / …) from the VS Code status bar with one click, opening each in a logo'd terminal tab. Supports a YOLO (auto-approve) mode, filters by what's installed, and lets you freely add / remove / configure agents — no code changes required.
 
 ## Features
@@ -21,6 +23,16 @@ Launch the AI CLI coding assistants installed on your machine (Claude Code / Cod
 ![Quick Pick](media/screenshots/dropdown.png)
 
 ## Install
+
+### From the VS Code Marketplace (recommended)
+
+- Open the [AI Agents Terminal Marketplace page](https://marketplace.visualstudio.com/items?itemName=cnsharp.ai-agents-terminal) and click **Install**.
+- Or in VS Code: open the **Extensions** view, search for `AI Agents Terminal`, and click **Install**.
+- Or from the command line:
+
+  ```sh
+  code --install-extension cnsharp.ai-agents-terminal
+  ```
 
 ### Run from source (development / trial)
 

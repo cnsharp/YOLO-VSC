@@ -1,5 +1,7 @@
 # AI Agents Terminal
 
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/cnsharp.ai-agents-terminal?label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=cnsharp.ai-agents-terminal)
+
 在 VS Code 状态栏一键启动本机已安装的 AI CLI 编程助手（Claude Code / Codex / Cursor / …），并在带 logo 的终端标签页中打开。支持 YOLO（自动放行）模式，按安装情况过滤，并可自由增删配置——无需改代码即可定制。
 
 ## 功能
@@ -21,6 +23,16 @@
 ![Quick Pick](media/screenshots/dropdown.png)
 
 ## 安装
+
+### 从 VS Code 应用市场安装（推荐）
+
+- 打开 [AI Agents Terminal 市场页面](https://marketplace.visualstudio.com/items?itemName=cnsharp.ai-agents-terminal)，点击 **Install**。
+- 或在 VS Code 中打开**扩展**视图，搜索 `AI Agents Terminal`，点击**安装**。
+- 或用命令行：
+
+  ```sh
+  code --install-extension cnsharp.ai-agents-terminal
+  ```
 
 ### 从源码运行（开发 / 试用）
 
