@@ -10,6 +10,7 @@
   "categories": [
     "AI"
   ],
+  "icon": "media/icon.png",
   "activationEvents": [
     "onStartupFinished"
   ],
