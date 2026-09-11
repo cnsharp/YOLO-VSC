@@ -2,7 +2,7 @@
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/cnsharp.agentyolo?label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=cnsharp.agentyolo)
 
-A VS Code port of the IntelliJ *Agent YOLO* plugin. It opens an embedded terminal
+The VS Code edition of the *Agent YOLO* family. It opens an embedded terminal
 panel that launches AI CLI agents (Claude Code, Codex, Cursor CLI, …) with a one-click
 **Skip permissions (YOLO)** toggle, and makes terminal output clickable: file paths, stack-trace
 frames, type/member names, and URLs all become navigation links.
@@ -29,9 +29,8 @@ frames, type/member names, and URLs all become navigation links.
 > To dock it on the right instead, right-click the panel header and choose **Move to Secondary Side Bar** —
 > VS Code remembers the choice.
 
-> **Co-existence.** Agent YOLO (`cnsharp.agentyolo`, `yolo.*`) is independent of the *AI Agents Terminal*
-> extension (`cnsharp.ai-agents-terminal`, `aiAgentsTerminal.*`). They register disjoint settings, commands,
-> and views, so both can be installed in the same VS Code window without conflict.
+> **Co-existence.** Agent YOLO (`cnsharp.agentyolo`) uses the dedicated `yolo.*` settings namespace and its own
+> commands/views, so it can be installed alongside other agent-launcher extensions without conflict.
 
 ## Language support (install a language server to navigate type/member links)
 
