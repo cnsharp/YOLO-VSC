@@ -12,7 +12,9 @@
     "vscode": "^1.85.0"
   },
   "categories": [
-    "AI"
+    "AI",
+    "Chat",
+    "Programming Languages"
   ],
   "icon": "media/icon.png",
   "galleryBanner": {
@@ -23,11 +25,12 @@
     "ai",
     "agent",
     "claude",
+    "cli",
+    "code",
     "codex",
-    "cursor",
-    "yolo",
-    "terminal",
-    "status-bar"
+    "llm",
+    "status-bar",
+    "yolo"
   ],
   "activationEvents": [
     "onStartupFinished"
