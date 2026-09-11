@@ -1,37 +1,94 @@
-import { exec } from "child_process";
-import { promisify } from "util";
+// Agent detection: can the command actually be executed?
+//
+// Ported to mirror the proven `isInstalled` probe: run `command -v` (falling back to
+// `<command> --version`) through the user's LOGIN shell with `-lc` — login so rc-defined PATH is
+// honoured (nvm/fnm/brew/npm-global/… that a GUI editor doesn't inherit), but NON-interactive: an
+// interactive `-i` shell hangs when spawned without a tty, which makes PATH probes silently fail. A
+// short timeout keeps a slow or network-touching CLI from stalling detection.
 
-const execAsync = promisify(exec);
+import { execSync } from "child_process";
+import * as settings from "./settings/settings";
 
-/**
- * Whether `command` is installed: just try to actually run it.
- *
- * Mirrors the IntelliJ YOLO plugin's `AgentDetector.canExecute` version probe —
- * execute `<command> --version` and treat only an exit code of 0 as available.
- * We run it through the user's login shell (`-lc`, not `-i`: an interactive
- * shell hangs when spawned without a tty) so PATH entries injected by rc files
- * (nvm/fnm/brew/npm-global/...) are honoured. A short timeout keeps a slow or
- * network-touching CLI from stalling detection.
- */
-export async function isInstalled(command: string): Promise<boolean> {
-  const safe = command.replace(/'/g, "'\\''");
+const PROBE_TIMEOUT_MS = 5000;
+const VERSION_PROBE_ARGS = ["--version", "-v", "--help", "-h"];
 
+/** The probe shell + argv prefix: `${SHELL} -lc`. */
+function probeShell(): { shell: string; prefix: string } {
+  const configured = settings.getShell();
   if (process.platform === "win32") {
-    try {
-      await execAsync(`where ${safe}`, { windowsHide: true });
-      return true;
-    } catch {
-      return false;
-    }
+    return { shell: configured || "cmd.exe", prefix: "" };
   }
+  const shell = configured || process.env.SHELL || "/bin/bash";
+  // `-lc`: login (honours rc PATH) but non-interactive (never hangs without a tty).
+  return { shell, prefix: `${shell} -lc` };
+}
 
-  const shell = process.env.SHELL || "/bin/sh";
+/** Resolve the command's absolute path (for display). Returns undefined if not found. */
+export function resolvePath(command: string): string | undefined {
+  const cmd = command.trim();
+  if (cmd.length === 0) {
+    return undefined;
+  }
   try {
-    await execAsync(`${shell} -lc "${safe} --version"`, {
-      windowsHide: true,
-      timeout: 3000,
-    });
+    if (process.platform === "win32") {
+      const out = execSync(`where ${cmd.replace(/"/g, "")}`, {
+        encoding: "utf-8",
+        timeout: PROBE_TIMEOUT_MS,
+      })
+        .trim()
+        .split(/\r?\n/)[0]
+        ?.trim();
+      return out && out.length > 0 ? out : undefined;
+    }
+    const { prefix } = probeShell();
+    const out = execSync(`${prefix} "command -v '${cmd.replace(/'/g, "'\\''")}'"`, {
+      encoding: "utf-8",
+      timeout: PROBE_TIMEOUT_MS,
+    })
+      .trim()
+      .split(/\r?\n/)[0]
+      ?.trim();
+    return out && out.length > 0 ? out : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Whether the command can actually be executed — PATH check first, version-probe fallback. */
+export function canExecute(command: string): boolean {
+  const cmd = command.trim();
+  if (cmd.length === 0) {
+    return false;
+  }
+  if (resolvePath(cmd) !== undefined) {
     return true;
+  }
+  return runVersionProbe(cmd);
+}
+
+function runVersionProbe(command: string): boolean {
+  const safe = command.replace(/'/g, "'\\''");
+  try {
+    if (process.platform === "win32") {
+      execSync(`where ${command.replace(/"/g, "")}`, {
+        encoding: "utf-8",
+        timeout: PROBE_TIMEOUT_MS,
+      });
+      return true;
+    }
+    const { prefix } = probeShell();
+    for (const arg of VERSION_PROBE_ARGS) {
+      try {
+        execSync(`${prefix} "${safe} ${arg}"`, {
+          encoding: "utf-8",
+          timeout: PROBE_TIMEOUT_MS,
+        });
+        return true;
+      } catch {
+        // Try the next probe argument.
+      }
+    }
+    return false;
   } catch {
     return false;
   }

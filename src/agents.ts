@@ -18,7 +18,7 @@ export interface AgentDef {
 
 /**
  * Shape of an entry in `agents.json` (the built-in catalog) and in the
- * `aiAgentsTerminal.agents` setting (user overrides / additions). Only
+ * `yolo.agents` setting (user overrides / additions). Only
  * `command` is required; everything else overrides the built-in agent with the
  * same `command`, or defines a brand-new custom agent.
  */
@@ -55,7 +55,7 @@ export function initBuiltInAgents(ctx: vscode.ExtensionContext): void {
     }
     builtInAgents = parsed as AgentConfig[];
   } catch (e) {
-    console.error("[ai-agents-terminal] failed to load agents.json:", e);
+    console.error("[agentyolo] failed to load agents.json:", e);
     builtInAgents = [];
   }
 }
@@ -72,7 +72,7 @@ export function getAgentConfigWarnings(): string[] {
 
 /**
  * Final agent list = built-ins from agents.json, merged with the user's
- * `aiAgentsTerminal.agents` setting. The setting is a list of overrides /
+ * `yolo.agents` setting. The setting is a list of overrides /
  * additions:
  *   - an entry whose `command` (or `id`) matches a built-in overrides that
  *     built-in — only the fields you set replace the built-in's; `enabled:false`
@@ -83,7 +83,7 @@ export function getAgentConfigWarnings(): string[] {
 function buildAgents(): { agents: AgentDef[]; warnings: string[] } {
   const overrides =
     vscode.workspace
-      .getConfiguration("aiAgentsTerminal")
+      .getConfiguration("yolo")
       .get<AgentConfig[]>("agents") ?? [];
 
   const warnings: string[] = [];

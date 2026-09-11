@@ -1,8 +1,8 @@
 {
-  "name": "ai-agents-terminal",
-  "displayName": "AI Agents Terminal",
-  "description": "Launch the AI CLI agents installed on your machine (Claude Code / Codex / Cursor / …) from a status-bar button, with YOLO auto-approve and Resume-session toggles, terminal-profile integration, and a configurable agent catalog.",
-  "version": "1.0.1",
+  "name": "agentyolo",
+  "displayName": "Agent YOLO",
+  "description": "Launch AI CLI agents (Claude Code, Codex, Cursor CLI, …) in an embedded terminal with clickable file/type links.",
+  "version": "1.0.0",
   "publisher": "cnsharp",
   "repository": {
     "type": "git",
@@ -12,62 +12,30 @@
     "vscode": "^1.85.0"
   },
   "categories": [
-    "AI",
-    "Chat",
-    "Programming Languages"
+    "AI"
   ],
   "icon": "media/icon.png",
   "galleryBanner": {
     "color": "#1e1e1e",
     "theme": "dark"
   },
-  "keywords": [
-    "ai",
-    "agent",
-    "claude",
-    "cli",
-    "code",
-    "codex",
-    "llm",
-    "status-bar",
-    "yolo"
-  ],
   "activationEvents": [
-    "onStartupFinished"
+    "onView:yolo.panel",
+    "onCommand:yolo.openPanel"
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "keybindings": [
-      {
-        "command": "ai-agents-terminal.toggleYoloMode",
-        "key": "ctrl+alt+y",
-        "mac": "cmd+alt+y"
-      },
-      {
-        "command": "ai-agents-terminal.toggleResumeMode",
-        "key": "ctrl+alt+r",
-        "mac": "cmd+alt+r"
-      }
-    ],
     "configuration": {
-      "title": "AI Agents Terminal",
+      "title": "Agent YOLO",
       "properties": {
-        "aiAgentsTerminal.yoloMode": {
-          "type": "boolean",
-          "default": false,
-          "markdownDescription": "YOLO mode: launch agents with their `skipFlag` (auto-approve) so they run without permission prompts. Toggle it from the `$(zap)` status-bar button or `Ctrl/Cmd+Alt+Y`."
-        },
-        "aiAgentsTerminal.resumeMode": {
-          "type": "boolean",
-          "default": false,
-          "markdownDescription": "Resume mode: launch agents with their `resumeFlag` to continue the most recent session. Toggle it from the `$(history)` status-bar button or `Ctrl/Cmd+Alt+R`."
-        },
-        "aiAgentsTerminal.agents": {
+        "yolo.agents": {
           "type": "array",
-          "markdownDescription": "User overrides / additions merged on top of the built-in catalog in `agents.json`. Override a built-in by matching its `command` (only the fields you set replace it); set `enabled: false` to hide a built-in; use a `command` not in `agents.json` to add a custom agent.\n\nChanges apply immediately — the picker re-reads this setting every time it opens and the Terminal profiles are re-registered. A newly added `command` may need a window reload if another window currently owns the PATH probe (it refreshes at most once every 15s).\n\nExample — change Claude's resume flag and hide Gemini:\n```json\n\"aiAgentsTerminal.agents\": [\n  { \"command\": \"claude\", \"resumeFlag\": \"--continue\" },\n  { \"command\": \"gemini\", \"enabled\": false }\n]\n```\n\nLaunch args are ordered `baseArgs` → `skipFlag` → `resumeFlag`; `skipFlag` is only appended when YOLO mode is on, `resumeFlag` only when Resume mode is on.",
+          "markdownDescription": "User overrides / additions merged on top of the built-in catalog in agents.json. Override a built-in by matching its `command` (only the fields you set replace it, including `skipFlag` and `resumeFlag`); set `enabled: false` to hide a built-in; use a `command` not in agents.json to add a custom agent.\n\nEdit it directly in **VS Code Settings** — there is no in-panel Settings UI; changes apply on the next launch. Example — change Claude's resume flag and hide Gemini:\n```json\n\"yolo.agents\": [\n  { \"command\": \"claude\", \"resumeFlag\": \"--continue\" },\n  { \"command\": \"gemini\", \"enabled\": false }\n]\n```\n\nLaunch args are ordered `baseArgs` → `skipFlag` → `resumeFlag`; `skipFlag` only appends when YOLO (skip-permissions) mode is on, `resumeFlag` only when Resume mode is on.",
           "items": {
             "type": "object",
-            "required": ["command"],
+            "required": [
+              "command"
+            ],
             "additionalProperties": false,
             "defaultSnippets": [
               {
@@ -80,7 +48,7 @@
               },
               {
                 "label": "Hide a built-in agent",
-                "description": "Keep the agent in agents.json but stop showing it in the launcher.",
+                "description": "Keep the agent in agents.json but stop showing it in the panel.",
                 "body": {
                   "command": "${1:gemini}",
                   "enabled": false
@@ -102,20 +70,28 @@
               "command": {
                 "type": "string",
                 "markdownDescription": "CLI binary launched in the terminal (also used for PATH detection). Required. Match a built-in's `command` to override it; use a new one to add a custom agent.",
-                "examples": ["claude", "codex", "cursor-agent"]
+                "examples": [
+                  "claude",
+                  "codex",
+                  "cursor-agent"
+                ]
               },
               "displayName": {
                 "type": "string",
-                "markdownDescription": "Name shown in the launcher. Defaults to `command` for custom agents."
+                "markdownDescription": "Name shown in the panel. Defaults to `command` for custom agents."
               },
               "baseArgs": {
                 "type": "string",
                 "markdownDescription": "Space-separated arguments always passed to the command, before any mode flag (e.g. `agent` for `cursor-agent`, `run` for `kilo`).",
-                "examples": ["agent", "run", "--auto-approve true"]
+                "examples": [
+                  "agent",
+                  "run",
+                  "--auto-approve true"
+                ]
               },
               "skipFlag": {
                 "type": "string",
-                "markdownDescription": "Space-separated flag appended when YOLO mode is on (e.g. `--dangerously-skip-permissions` for Claude, `--yolo` for Gemini). Leave it empty to launch with no auto-approve flag.",
+                "markdownDescription": "Space-separated flag appended when YOLO (skip-permissions) mode is on (e.g. `--dangerously-skip-permissions` for Claude, `--yolo` for Gemini). Leave it empty to launch with no auto-approve flag.",
                 "examples": [
                   "--dangerously-skip-permissions",
                   "--full-auto",
@@ -127,12 +103,19 @@
               "resumeFlag": {
                 "type": "string",
                 "markdownDescription": "Space-separated flag appended when Resume mode is on, to continue the most recent session (e.g. `-r` for Claude, `--resume` for Codex and Cursor). Omit it and the agent launches normally even in Resume mode.",
-                "examples": ["-r", "--resume", "--continue"]
+                "examples": [
+                  "-r",
+                  "--resume",
+                  "--continue"
+                ]
               },
               "iconFile": {
                 "type": "string",
                 "markdownDescription": "Icon filename under the extension's `media/agents` folder (e.g. `claude.png`). If omitted, a default terminal icon is used.",
-                "examples": ["claude.png", "codex.png"]
+                "examples": [
+                  "claude.png",
+                  "codex.png"
+                ]
               },
               "enabled": {
                 "type": "boolean",
@@ -146,41 +129,133 @@
             }
           }
         },
-        "aiAgentsTerminal.installedAgents": {
+        "yolo.permissionRules": {
           "type": "array",
-          "items": { "type": "string" },
           "default": [],
-          "hidden": true,
+          "markdownDescription": "Per-agent skip-permission flag, as a single list of `{ agentId, flag }` entries. `agentId` matches an agent's `command` or `id`; the `flag` is appended when YOLO mode is on, taking precedence over the agent's own `skipFlag` in `yolo.agents`. Prefer setting `skipFlag` directly on the agent in `yolo.agents`; use this only when you want one shared list. Example:\n```json\n\"yolo.permissionRules\": [\n  { \"agentId\": \"claude\", \"flag\": \"--dangerously-skip-permissions\" },\n  { \"agentId\": \"codex\", \"flag\": \"--full-auto\" }\n]\n```",
+          "items": {
+            "type": "object",
+            "required": [
+              "agentId",
+              "flag"
+            ],
+            "properties": {
+              "agentId": {
+                "type": "string",
+                "markdownDescription": "Agent `command` or `id` this rule applies to.",
+                "examples": [
+                  "claude",
+                  "codex"
+                ]
+              },
+              "flag": {
+                "type": "string",
+                "markdownDescription": "Space-separated flag appended when YOLO mode is on.",
+                "examples": [
+                  "--dangerously-skip-permissions",
+                  "--full-auto",
+                  "--yolo"
+                ]
+              }
+            }
+          }
+        },
+        "yolo.skipEnabled": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "YOLO mode: launch agents with their skip-permission (auto-approve) flag so they run without permission prompts. Toggle it from the `$(zap)` button in the panel."
+        },
+        "yolo.resumeMode": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Resume mode: launch agents with their `resumeFlag` to continue the most recent session. Toggle it from the `$(history)` button in the panel."
+        },
+        "yolo.lastAgentId": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Internal: the `id` of the agent last selected/launched, so the panel can pre-select it next time it opens. Set automatically — you normally don't edit this."
+        },
+        "yolo.agentResumeFlags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "markdownDescription": "Per-agent override of the resume flag used when Resume mode is on, keyed by agent `command` or `id`. Takes precedence over the built-in `resumeFlag` in agents.json / `yolo.agents`. Use this to tune resume behaviour per agent (e.g. choose between an interactive session picker and resuming the latest automatically) without editing agents.json. Example:\n```json\n\"yolo.agentResumeFlags\": {\n  \"codebuddy\": \"-r\",\n  \"claude\": \"--resume\"\n}\n```\nWhen an agent is absent here, its `resumeFlag` from agents.json (or `yolo.agents`) is used."
+        },
+        "yolo.agentBaseArgs": {
+          "type": "object",
+          "default": {},
+          "markdownDescription": "Extra launch args per agent, keyed by the agent's lower-cased `id` (falls back to a match against `command`). Appended after the agent's own `baseArgs` from `yolo.agents`. Prefer setting `baseArgs` on the agent in `yolo.agents`; use this only when you want one shared map. Example:\n```json\n\"yolo.agentBaseArgs\": { \"cursor-agent\": \"agent\", \"kilo\": \"run\" }\n```"
+        },
+        "yolo.installedCommands": {
+          "type": "array",
+          "default": [],
           "markdownDescription": "Internal cache of AI agent commands detected on PATH. Maintained automatically — do not edit by hand. (internal)"
+        },
+        "yolo.shell": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Override the shell used to launch agents and probe PATH. Absolute path or a binary name on PATH. On Windows, leaving this empty auto-detects a POSIX shell (Git Bash / WSL) when needed; otherwise `cmd.exe` is used."
+        },
+        "yolo.shellArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Extra arguments passed to the shell before the agent command (e.g. `[\"-l\"]`). Ignored on Windows `cmd.exe`."
         }
       }
     },
     "commands": [
       {
-        "command": "ai-agents-terminal.openMenu",
-        "title": "AI Agents",
-        "icon": "$(robot)"
-      },
-      {
-        "command": "ai-agents-terminal.toggleYoloMode",
-        "title": "AI Agents: Toggle YOLO Mode",
-        "icon": "$(zap)"
-      },
-      {
-        "command": "ai-agents-terminal.toggleResumeMode",
-        "title": "AI Agents: Toggle Resume Mode",
-        "icon": "R"
+        "command": "yolo.openPanel",
+        "title": "Agent YOLO: Open Agents Panel",
+        "category": "Agent YOLO",
+        "icon": "$(y)"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "yolo-agents",
+          "title": "Agent YOLO",
+          "icon": "media/icons/panelIcon.png"
+        }
+      ]
+    },
+    "views": {
+      "yolo-agents": [
+        {
+          "icon": "media/icons/panelIcon.png",
+          "type": "webview",
+          "id": "yolo.panel",
+          "name": "AI Agents",
+          "retainContextWhenHidden": true
+        }
+      ]
+    }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run build",
+    "postinstall": "node scripts/ensure-node-pty-exec.cjs",
+    "build": "npm run compile && npm run build:webview",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "build:webview": "esbuild src/webview/panel.ts --bundle --outdir=media/dist --loader:.css=css --sourcemap",
+    "watch:webview": "npm run build:webview -- --watch",
+    "test": "node --test"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/vscode": "^1.85.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "esbuild": "^0.21.0"
+  },
+  "dependencies": {
+    "node-pty": "^1.1.0",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0"
   }
 }

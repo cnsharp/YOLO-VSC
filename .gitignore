@@ -8,3 +8,6 @@ out/
 
 # user workspace settings
 .vscode/
+
+# generated webview bundle (esbuild build output)
+media/dist/
