@@ -1,6 +1,5 @@
 node_modules/
 out/
-/dist/
 *.vsix
 .vscode-test/
 *.log
@@ -11,3 +10,6 @@ out/
 
 # generated webview bundle (esbuild build output)
 media/dist/
+
+# packaged extension output (build-install.sh writes the .vsix here)
+dist/

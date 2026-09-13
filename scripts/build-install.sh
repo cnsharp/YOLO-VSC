@@ -29,6 +29,11 @@ echo "==> compile"
 npm run compile
 
 echo "==> package"
+# A previous run may have left a stray non-directory 'dist' (vsce wrote a .vsix
+# literally named 'dist'). vsce's --out dist/ needs dist to be a directory, so
+# drop any non-dir artifact and ensure the output dir exists.
+if [ -e dist ] && [ ! -d dist ]; then rm -f dist; fi
+mkdir -p dist
 marker="$(mktemp)"
 npx vsce package --allow-missing-repository --out dist/
 vsix="$(find "$REPO_ROOT/dist" -maxdepth 1 -name '*.vsix' -newer "$marker" -exec ls -t {} + 2>/dev/null | head -n 1 || true)"

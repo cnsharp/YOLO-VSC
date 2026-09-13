@@ -5,3 +5,7 @@ tsconfig.json
 .gitignore
 **/*.ts
 **/*.map
+
+# node-pty bundles Windows debug symbols (.pdb) and cross-platform prebuilds in
+# node_modules; the .pdb files are never needed at runtime — drop them from the package.
+node_modules/**/*.pdb
