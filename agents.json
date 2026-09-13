@@ -249,7 +249,7 @@
     "command": "pi",
     "skipFlag": "--approve",
     "resumeFlag": "-r",
-    "url": "https://pi.ai/",
+    "url": "https://pi.dev/",
     "baseArgs": "",
     "iconFile": "pi.png"
   },
