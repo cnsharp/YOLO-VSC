@@ -6,7 +6,7 @@
   "publisher": "cnsharp",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cnsharp/ai-agents-terminal-vsc.git"
+    "url": "https://github.com/cnsharp/yolo-vsc.git"
   },
   "engines": {
     "vscode": "^1.85.0"
