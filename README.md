@@ -135,47 +135,46 @@ Fields: `command` (required) / `displayName` / `baseArgs` / `skipFlag` / `resume
 
 > Uniqueness: `command`, `displayName`, and `id` must each be unique. On duplicates the extension warns and drops the duplicate (keeping the first occurrence).
 
-### Built-in agent list
+### Supported agent list
 
-The built-in catalog ships in the root `agents.json` (logos in `media/agents/`). The dropdown shows only the display name, not the command / id.
+| id | display name | command (PATH detection) | website |
+|---|---|---|---|
+| claude | Claude Code | `claude` | <a href="https://claude.ai/"><img src="media/agents/claude.png" height="20" alt="Claude Code"></a> |
+| codex | Codex | `codex` | <a href="https://openai.com/codex"><img src="media/agents/codex.png" height="20" alt="Codex"></a> |
+| cursor | Cursor | `cursor-agent` | <a href="https://cursor.com/"><img src="media/agents/cursor.png" height="20" alt="Cursor"></a> |
+| copilot | GitHub Copilot | `copilot` | <a href="https://github.com/features/copilot"><img src="media/agents/copilot.png" height="20" alt="GitHub Copilot"></a> |
+| opencode | OpenCode | `opencode` | <a href="https://opencode.ai/"><img src="media/agents/opencode.png" height="20" alt="OpenCode"></a> |
+| aider | Aider | `aider` | <a href="https://aider.chat/"><img src="media/agents/aider.png" height="20" alt="Aider"></a> |
+| cline | Cline | `cline` | <a href="https://cline.bot/"><img src="media/agents/cline.png" height="20" alt="Cline"></a> |
+| continue | Continue | `cn` | <a href="https://continue.dev/"><img src="media/agents/continue.png" height="20" alt="Continue"></a> |
+| openclaw | OpenClaw | `openclaw` | <a href="https://openclaw.ai/"><img src="media/agents/openclaw.png" height="20" alt="OpenClaw"></a> |
+| kiro | Kiro | `kiro-cli` | <a href="https://kiro.dev/"><img src="media/agents/kiro.png" height="20" alt="Kiro"></a> |
+| goose | Goose | `goose` | <a href="https://block.github.io/goose/"><img src="media/agents/goose.png" height="20" alt="Goose"></a> |
+| crush | Charm Crush | `crush` | <a href="https://charm.sh/crush"><img src="media/agents/crush.png" height="20" alt="Charm Crush"></a> |
+| amp | Amp | `amp` | <a href="https://ampcode.com/"><img src="media/agents/amp.png" height="20" alt="Amp"></a> |
+| kimi | Kimi | `kimi` | <a href="https://kimi.moonshot.cn/"><img src="media/agents/kimi.png" height="20" alt="Kimi"></a> |
+| qwen-code | Qwen Code | `qwen` | <a href="https://qwen.ai/qwencode"><img src="media/agents/qwen-code.png" height="20" alt="Qwen Code"></a> |
+| trae | TraeCode | `traecli` | <a href="https://www.trae.ai/"><img src="media/agents/trae.png" height="20" alt="TraeCode"></a> |
+| codebuddy | CodeBuddy | `codebuddy` | <a href="https://www.codebuddy.ai/"><img src="media/agents/codebuddy.png" height="20" alt="CodeBuddy"></a> |
+| qoder | Qoder | `qoder` | <a href="https://qoder.com/"><img src="media/agents/qoder.png" height="20" alt="Qoder"></a> |
+| devin | Devin | `devin` | <a href="https://devin.ai/"><img src="media/agents/devin.png" height="20" alt="Devin"></a> |
+| grok | Grok | `grok` | <a href="https://grok.com/"><img src="media/agents/grok.png" height="20" alt="Grok"></a> |
+| antigravity | Antigravity | `agy` | <a href="https://antigravity.google/"><img src="media/agents/antigravity.png" height="20" alt="Antigravity"></a> |
+| mistral-vibe | Mistral Vibe | `vibe` | <a href="https://mistral.ai/"><img src="media/agents/mistral-vibe.png" height="20" alt="Mistral Vibe"></a> |
+| kilo | Kilo Code | `kilo` | <a href="https://kilocode.ai/"><img src="media/agents/kilo.png" height="20" alt="Kilo Code"></a> |
+| hermes | Hermes | `hermes` | <a href="https://hermes-agent.nousresearch.com/"><img src="media/agents/hermes.png" height="20" alt="Hermes"></a> |
+| pi | Pi | `pi` | <a href="https://pi.dev/"><img src="media/agents/pi.png" height="20" alt="Pi"></a> |
+| droid | Droid | `droid` | <a href="https://factory.ai/"><img src="media/agents/droid.png" height="20" alt="Droid"></a> |
+| aug | Auggie | `auggie` | <a href="https://augmentcode.com/"><img src="media/agents/aug.png" height="20" alt="Auggie"></a> |
+| rovo | Rovo Dev | `rovo` | <a href="https://rovo.atlassian.com/"><img src="media/agents/rovo.png" height="20" alt="Rovo Dev"></a> |
+| prime-agent | Prime Agent | `prime-agent` | <a href="https://www.primeintellect.ai/"><img src="media/agents/prime-agent.png" height="20" alt="Prime Agent"></a> |
+| autohand | Autohand | `autohand` | <a href="https://autohand.ai/"><img src="media/agents/autohand.png" height="20" alt="Autohand"></a> |
+| command-code | Command Code | `command-code` | <a href="https://commandcode.ai/"><img src="media/agents/command-code.png" height="20" alt="Command Code"></a> |
+| ante | Ante | `ante` | <a href="https://antigma.ai/"><img src="media/agents/ante.png" height="20" alt="Ante"></a> |
+| codebuff | Codebuff | `codebuff` | <a href="https://codebuff.com/"><img src="media/agents/codebuff.png" height="20" alt="Codebuff"></a> |
+| omp | OMP | `omp` | <a href="https://ohmyposh.dev/"><img src="media/agents/omp.png" height="20" alt="OMP"></a> |
 
-| id | display name | command (PATH) | YOLO (skipFlag) | Resume (resumeFlag) |
-|---|---|---|---|---|
-| claude | Claude Code | `claude` | `--dangerously-skip-permissions` | `-r` |
-| codex | Codex | `codex` | `--yolo` | `--resume` |
-| cursor | Cursor | `cursor-agent` | `--force` | `--resume` |
-| copilot | GitHub Copilot | `copilot` | `--allow-all` | `-r` |
-| opencode | OpenCode | `opencode` | `--auto` | |
-| aider | Aider | `aider` | `--yes` | |
-| cline | Cline | `cline` | `--auto-approve true` | `--taskId` |
-| continue | Continue | `cn` | `--auto` | |
-| openclaw | OpenClaw | `openclaw` | | |
-| kiro | Kiro | `kiro-cli` | `--trust-all-tools` | |
-| goose | Goose | `goose` | *(env `GOOSE_MODE=auto`)* | `-r` |
-| crush | Charm Crush | `crush` | `--yolo` | |
-| amp | Amp | `amp` | `--dangerously-allow-all` | |
-| kimi | Kimi | `kimi` | `--yolo` | `-r` |
-| qwen-code | Qwen Code | `qwen` | `--approval-mode yolo` | |
-| trae | TraeCode | `traecli` | | `--resume` |
-| codebuddy | CodeBuddy | `codebuddy` | `-y` | `-r` |
-| qoder | Qoder | `qoder` | `--dangerously-skip-permissions` | |
-| devin | Devin | `devin` | `--permission-mode bypass` | `--resume` |
-| grok | Grok | `grok` | `--permission-mode bypassPermissions` | `--resume` |
-| antigravity | Antigravity | `agy` | `--dangerously-skip-permissions` | `--conversation` |
-| mistral-vibe | Mistral Vibe | `vibe` | `--agent auto-approve` | |
-| kilo | Kilo Code | `kilo` | | |
-| hermes | Hermes | `hermes` | `--yolo` | `-r` |
-| pi | Pi | `pi` | `--approve` | `-r` |
-| droid | Droid | `droid` | `--auto high` | `--resume` |
-| aug | Auggie | `auggie` | | |
-| rovo | Rovo Dev | `rovo` | `--yolo` | |
-| prime-agent | Prime Agent | `prime-agent` | | `--resume` |
-| autohand | Autohand | `autohand` | `--unrestricted` | |
-| command-code | Command Code | `command-code` | `--yolo` | |
-| ante | Ante | `ante` | `--yolo` | |
-| codebuff | Codebuff | `codebuff` | | |
-| omp | OMP | `omp` | | `--resume` |
-
+> Logos live in `media/agents/` (PNG). The picker shows only the display name, not the command / id.
 ## Settings reference
 
 | Setting | Type | Default | Description |
