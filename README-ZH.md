@@ -9,7 +9,7 @@
 - **状态栏启动器**：右下角 `🤖 AI Agents` 按钮 → 弹出 Quick Pick，只列出 PATH 上**已安装**的 agent（带 logo），点选即在终端标签页打开。
 - **YOLO 模式**：状态栏 `Y` 按钮或快捷键 `Ctrl/Cmd+Alt+Y` 切换；开启后启动 agent 时自动附加各自的自动放行参数（如 Claude 的 `--dangerously-skip-permissions`）。
 - **Resume 模式**：状态栏 `R` 按钮或快捷键 `Ctrl/Cmd+Alt+R` 切换；开启后启动 agent 时自动附加各自的 `resumeFlag`（如 Claude 的 `-r`），继续最近的会话。
-- **数据驱动**：内置 agent（定义在仓库根 `agents.json`），可在设置里覆盖参数 / 隐藏 / 添加自定义 agent，无需改代码。
+- **数据驱动**：支持的 agent（定义在仓库根 `agents.json`），可在设置里覆盖参数 / 隐藏 / 添加自定义 agent，无需改代码。
 - **终端 profile**：已安装的 agent 会注册为 Terminal profile，出现在 `Terminal: Select Default Profile`（可按安装过滤，用作默认终端）。
 
 ## 截图
@@ -66,12 +66,12 @@
 
 ### 配置 agent（无需改代码）
 
-设置项 **`aiAgentsTerminal.agents`** 是与 `agents.json` 内置目录**合并**的覆盖 / 新增列表：按 `command` 匹配内置项进行覆盖（只改你填的字段）；把 `enabled` 设为 `false` 可隐藏某内置项；用一个不在 `agents.json` 里的 `command` 即可新增自定义 agent。
+设置项 **`aiAgentsTerminal.agents`** 是与 `agents.json` 中的 agent 目录**合并**的覆盖 / 新增列表：按 `command` 匹配目录项进行覆盖（只改你填的字段）；把 `enabled` 设为 `false` 可隐藏某个 agent；用一个不在 `agents.json` 里的 `command` 即可新增自定义 agent。
 
-- **编辑**：内置项都在仓库根 `agents.json` 里；要改某内置项，在设置里追加一条同 `command` 的覆盖条目（只写要改的字段即可）。
+- **编辑**：agent 定义都在仓库根 `agents.json` 里；要改某个 agent，在设置里追加一条同 `command` 的覆盖条目（只写要改的字段即可）。
 - **覆盖参数**：只改要改的字段，例如把 `claude` 的 `skipFlag` 改成 `"--new-flag"`。
 - **隐藏**：删除该条目，或保留条目并把 `enabled` 设为 `false`。
-- **添加自定义 agent**：追加一条 `command` 不在内置列表里的条目，例如：
+- **添加自定义 agent**：追加一条 `command` 不在 agent 目录里的条目，例如：
 
   ```json
   { "command": "myagent", "displayName": "My Agent", "baseArgs": "run", "iconFile": "myagent.png" }
@@ -84,28 +84,44 @@
 
 > 唯一性：`command`、`displayName`、`id` 三者各自必须唯一；发现重复时扩展会提示并丢弃重复项（保留首次出现）。
 
-### 内置 agent 列表
+### 支持的 agent 列表
 
-| id | 显示名 | 命令 (PATH 探测) | logo |
+| id | 显示名 | 命令 (PATH 探测) | 官网 |
 |---|---|---|---|
-| claude | Claude Code | `claude` | claude.png |
-| codex | Codex | `codex` | codex.png |
-| cline | Cline | `cline` | cline.png |
-| codebuddy | CodeBuddy | `codebuddy` | codebuddy.png |
-| continue | Continue | `cn` | continue.png |
-| copilot | Copilot | `copilot` | copilot.png |
-| cursor | Cursor | `cursor-agent` | cursor.png |
-| gemini | Gemini | `gemini` | gemini.png |
-| goose | Goose | `goose` | goose.png |
-| hermes | Hermes | `hermes` | hermes.png |
-| kilo | Kilo Code | `kilo` | kilo.png |
-| kimi | Kimi | `kimi` | kimi.png |
-| openclaw | OpenClaw | `openclaw` | openclaw.png |
-| opencode | OpenCode | `opencode` | opencode.png |
-| pi | Pi | `pi` | pi.png |
-| qoder | Qoder | `qoder` | qoder.png |
-| trae | TraeCode | `traecli` | trae.png |
-| zcode | ZCode | `zcode` | zcode.png |
+| claude | Claude Code | `claude` | <a href="https://claude.ai/"><img src="media/agents/claude.png" height="20" alt="Claude Code"></a> |
+| codex | Codex | `codex` | <a href="https://openai.com/codex"><img src="media/agents/codex.png" height="20" alt="Codex"></a> |
+| cursor | Cursor | `cursor-agent` | <a href="https://cursor.com/"><img src="media/agents/cursor.png" height="20" alt="Cursor"></a> |
+| copilot | GitHub Copilot | `copilot` | <a href="https://github.com/features/copilot"><img src="media/agents/copilot.png" height="20" alt="GitHub Copilot"></a> |
+| opencode | OpenCode | `opencode` | <a href="https://opencode.ai/"><img src="media/agents/opencode.png" height="20" alt="OpenCode"></a> |
+| aider | Aider | `aider` | <a href="https://aider.chat/"><img src="media/agents/aider.png" height="20" alt="Aider"></a> |
+| cline | Cline | `cline` | <a href="https://cline.bot/"><img src="media/agents/cline.png" height="20" alt="Cline"></a> |
+| continue | Continue | `cn` | <a href="https://continue.dev/"><img src="media/agents/continue.png" height="20" alt="Continue"></a> |
+| openclaw | OpenClaw | `openclaw` | <a href="https://openclaw.ai/"><img src="media/agents/openclaw.png" height="20" alt="OpenClaw"></a> |
+| kiro | Kiro | `kiro-cli` | <a href="https://kiro.dev/"><img src="media/agents/kiro.png" height="20" alt="Kiro"></a> |
+| goose | Goose | `goose` | <a href="https://block.github.io/goose/"><img src="media/agents/goose.png" height="20" alt="Goose"></a> |
+| crush | Charm Crush | `crush` | <a href="https://charm.sh/crush"><img src="media/agents/crush.png" height="20" alt="Charm Crush"></a> |
+| amp | Amp | `amp` | <a href="https://ampcode.com/"><img src="media/agents/amp.png" height="20" alt="Amp"></a> |
+| kimi | Kimi | `kimi` | <a href="https://kimi.moonshot.cn/"><img src="media/agents/kimi.png" height="20" alt="Kimi"></a> |
+| qwen-code | Qwen Code | `qwen` | <a href="https://qwen.ai/qwencode"><img src="media/agents/qwen-code.png" height="20" alt="Qwen Code"></a> |
+| trae | TraeCode | `traecli` | <a href="https://www.trae.ai/"><img src="media/agents/trae.png" height="20" alt="TraeCode"></a> |
+| codebuddy | CodeBuddy | `codebuddy` | <a href="https://www.codebuddy.ai/"><img src="media/agents/codebuddy.png" height="20" alt="CodeBuddy"></a> |
+| qoder | Qoder | `qoder` | <a href="https://qoder.com/"><img src="media/agents/qoder.png" height="20" alt="Qoder"></a> |
+| devin | Devin | `devin` | <a href="https://devin.ai/"><img src="media/agents/devin.png" height="20" alt="Devin"></a> |
+| grok | Grok | `grok` | <a href="https://grok.com/"><img src="media/agents/grok.png" height="20" alt="Grok"></a> |
+| antigravity | Antigravity | `agy` | <a href="https://antigravity.google/"><img src="media/agents/antigravity.png" height="20" alt="Antigravity"></a> |
+| mistral-vibe | Mistral Vibe | `vibe` | <a href="https://mistral.ai/"><img src="media/agents/mistral-vibe.png" height="20" alt="Mistral Vibe"></a> |
+| kilo | Kilo Code | `kilo` | <a href="https://kilocode.ai/"><img src="media/agents/kilo.png" height="20" alt="Kilo Code"></a> |
+| hermes | Hermes | `hermes` | <a href="https://hermes-agent.nousresearch.com/"><img src="media/agents/hermes.png" height="20" alt="Hermes"></a> |
+| pi | Pi | `pi` | <a href="https://pi.ai/"><img src="media/agents/pi.png" height="20" alt="Pi"></a> |
+| droid | Droid | `droid` | <a href="https://factory.ai/"><img src="media/agents/droid.png" height="20" alt="Droid"></a> |
+| aug | Auggie | `auggie` | <a href="https://augmentcode.com/"><img src="media/agents/aug.png" height="20" alt="Auggie"></a> |
+| rovo | Rovo Dev | `rovo` | <a href="https://rovo.atlassian.com/"><img src="media/agents/rovo.png" height="20" alt="Rovo Dev"></a> |
+| prime-agent | Prime Agent | `prime-agent` | <a href="https://www.primeintellect.ai/"><img src="media/agents/prime-agent.png" height="20" alt="Prime Agent"></a> |
+| autohand | Autohand | `autohand` | <a href="https://autohand.ai/"><img src="media/agents/autohand.png" height="20" alt="Autohand"></a> |
+| command-code | Command Code | `command-code` | <a href="https://commandcode.ai/"><img src="media/agents/command-code.png" height="20" alt="Command Code"></a> |
+| ante | Ante | `ante` | <a href="https://antigma.ai/"><img src="media/agents/ante.png" height="20" alt="Ante"></a> |
+| codebuff | Codebuff | `codebuff` | <a href="https://codebuff.com/"><img src="media/agents/codebuff.png" height="20" alt="Codebuff"></a> |
+| omp | OMP | `omp` | <a href="https://ohmyposh.dev/"><img src="media/agents/omp.png" height="20" alt="OMP"></a> |
 
 > logo 位于 `media/agents/`（PNG）。下拉只显示 displayName，不显示 command / id。
 

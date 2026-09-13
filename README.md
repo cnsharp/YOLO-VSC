@@ -9,7 +9,7 @@ Launch the AI CLI coding assistants installed on your machine (Claude Code / Cod
 - **Status-bar launcher**: a `🤖 AI Agents` button at bottom-right → opens a Quick Pick listing only the agents **installed** on PATH (with logos); pick one to open it in a new terminal tab.
 - **YOLO mode**: toggle via the `Y` status-bar button or the `Ctrl/Cmd+Alt+Y` shortcut; when on, each agent launches with its own auto-approve args (e.g. Claude's `--dangerously-skip-permissions`).
 - **Resume mode**: toggle via the `R` status-bar button or the `Ctrl/Cmd+Alt+R` shortcut; when on, each agent launches with its own `resumeFlag` (e.g. Claude's `-r`) to continue the most recent session.
-- **Data-driven**: the built-in agents (defined in the root `agents.json`) ship by default; override params, hide, or add custom agents from Settings — no code changes needed.
+- **Data-driven**: the supported agents (defined in the root `agents.json`) are recognized by default; override params, hide, or add custom agents from Settings — no code changes needed.
 - **Terminal profiles**: installed agents are registered as Terminal profiles, surfacing in `Terminal: Select Default Profile` (filtered by install status, can be set as the default terminal).
 
 ## Screenshots
@@ -66,12 +66,12 @@ Launch the AI CLI coding assistants installed on your machine (Claude Code / Cod
 
 ### Configure agents (no code required)
 
-The **`aiAgentsTerminal.agents`** setting is a list of overrides / additions **merged** with the built-in catalog in `agents.json`: match a built-in by `command` to override it (only the fields you set are replaced); set `enabled` to `false` to hide a built-in; use a `command` not present in `agents.json` to add a custom agent.
+The **`aiAgentsTerminal.agents`** setting is a list of overrides / additions **merged** with the agent catalog in `agents.json`: match a supported agent by `command` to override it (only the fields you set are replaced); set `enabled` to `false` to hide a supported agent; use a `command` not present in `agents.json` to add a custom agent.
 
-- **Edit**: the built-ins live in the root `agents.json`; to tweak a built-in, append an override entry with the same `command` (only the fields you want to change).
+- **Edit**: the catalog agents live in the root `agents.json`; to tweak a catalog agent, append an override entry with the same `command` (only the fields you want to change).
 - **Override params**: change only the fields you want, e.g. set `claude`'s `skipFlag` to `"--new-flag"`.
 - **Hide**: delete the entry, or keep it and set `enabled` to `false`.
-- **Add a custom agent**: append an entry whose `command` isn't built-in, e.g.:
+- **Add a custom agent**: append an entry whose `command` isn't in the catalog, e.g.:
 
   ```json
   { "command": "myagent", "displayName": "My Agent", "baseArgs": "run", "iconFile": "myagent.png" }
@@ -84,28 +84,44 @@ Fields: `command` (required) / `displayName` / `baseArgs` / `skipFlag` / `resume
 
 > Uniqueness: `command`, `displayName`, and `id` must each be unique. On duplicates the extension warns and drops the duplicate (keeping the first occurrence).
 
-### Built-in agent list
+### Supported agent list
 
-| id | display name | command (PATH detection) | logo |
+| id | display name | command (PATH detection) | website |
 |---|---|---|---|
-| claude | Claude Code | `claude` | claude.png |
-| codex | Codex | `codex` | codex.png |
-| cline | Cline | `cline` | cline.png |
-| codebuddy | CodeBuddy | `codebuddy` | codebuddy.png |
-| continue | Continue | `cn` | continue.png |
-| copilot | Copilot | `copilot` | copilot.png |
-| cursor | Cursor | `cursor-agent` | cursor.png |
-| gemini | Gemini | `gemini` | gemini.png |
-| goose | Goose | `goose` | goose.png |
-| hermes | Hermes | `hermes` | hermes.png |
-| kilo | Kilo Code | `kilo` | kilo.png |
-| kimi | Kimi | `kimi` | kimi.png |
-| openclaw | OpenClaw | `openclaw` | openclaw.png |
-| opencode | OpenCode | `opencode` | opencode.png |
-| pi | Pi | `pi` | pi.png |
-| qoder | Qoder | `qoder` | qoder.png |
-| trae | TraeCode | `traecli` | trae.png |
-| zcode | ZCode | `zcode` | zcode.png |
+| claude | Claude Code | `claude` | <a href="https://claude.ai/"><img src="media/agents/claude.png" height="20" alt="Claude Code"></a> |
+| codex | Codex | `codex` | <a href="https://openai.com/codex"><img src="media/agents/codex.png" height="20" alt="Codex"></a> |
+| cursor | Cursor | `cursor-agent` | <a href="https://cursor.com/"><img src="media/agents/cursor.png" height="20" alt="Cursor"></a> |
+| copilot | GitHub Copilot | `copilot` | <a href="https://github.com/features/copilot"><img src="media/agents/copilot.png" height="20" alt="GitHub Copilot"></a> |
+| opencode | OpenCode | `opencode` | <a href="https://opencode.ai/"><img src="media/agents/opencode.png" height="20" alt="OpenCode"></a> |
+| aider | Aider | `aider` | <a href="https://aider.chat/"><img src="media/agents/aider.png" height="20" alt="Aider"></a> |
+| cline | Cline | `cline` | <a href="https://cline.bot/"><img src="media/agents/cline.png" height="20" alt="Cline"></a> |
+| continue | Continue | `cn` | <a href="https://continue.dev/"><img src="media/agents/continue.png" height="20" alt="Continue"></a> |
+| openclaw | OpenClaw | `openclaw` | <a href="https://openclaw.ai/"><img src="media/agents/openclaw.png" height="20" alt="OpenClaw"></a> |
+| kiro | Kiro | `kiro-cli` | <a href="https://kiro.dev/"><img src="media/agents/kiro.png" height="20" alt="Kiro"></a> |
+| goose | Goose | `goose` | <a href="https://block.github.io/goose/"><img src="media/agents/goose.png" height="20" alt="Goose"></a> |
+| crush | Charm Crush | `crush` | <a href="https://charm.sh/crush"><img src="media/agents/crush.png" height="20" alt="Charm Crush"></a> |
+| amp | Amp | `amp` | <a href="https://ampcode.com/"><img src="media/agents/amp.png" height="20" alt="Amp"></a> |
+| kimi | Kimi | `kimi` | <a href="https://kimi.moonshot.cn/"><img src="media/agents/kimi.png" height="20" alt="Kimi"></a> |
+| qwen-code | Qwen Code | `qwen` | <a href="https://qwen.ai/qwencode"><img src="media/agents/qwen-code.png" height="20" alt="Qwen Code"></a> |
+| trae | TraeCode | `traecli` | <a href="https://www.trae.ai/"><img src="media/agents/trae.png" height="20" alt="TraeCode"></a> |
+| codebuddy | CodeBuddy | `codebuddy` | <a href="https://www.codebuddy.ai/"><img src="media/agents/codebuddy.png" height="20" alt="CodeBuddy"></a> |
+| qoder | Qoder | `qoder` | <a href="https://qoder.com/"><img src="media/agents/qoder.png" height="20" alt="Qoder"></a> |
+| devin | Devin | `devin` | <a href="https://devin.ai/"><img src="media/agents/devin.png" height="20" alt="Devin"></a> |
+| grok | Grok | `grok` | <a href="https://grok.com/"><img src="media/agents/grok.png" height="20" alt="Grok"></a> |
+| antigravity | Antigravity | `agy` | <a href="https://antigravity.google/"><img src="media/agents/antigravity.png" height="20" alt="Antigravity"></a> |
+| mistral-vibe | Mistral Vibe | `vibe` | <a href="https://mistral.ai/"><img src="media/agents/mistral-vibe.png" height="20" alt="Mistral Vibe"></a> |
+| kilo | Kilo Code | `kilo` | <a href="https://kilocode.ai/"><img src="media/agents/kilo.png" height="20" alt="Kilo Code"></a> |
+| hermes | Hermes | `hermes` | <a href="https://hermes-agent.nousresearch.com/"><img src="media/agents/hermes.png" height="20" alt="Hermes"></a> |
+| pi | Pi | `pi` | <a href="https://pi.ai/"><img src="media/agents/pi.png" height="20" alt="Pi"></a> |
+| droid | Droid | `droid` | <a href="https://factory.ai/"><img src="media/agents/droid.png" height="20" alt="Droid"></a> |
+| aug | Auggie | `auggie` | <a href="https://augmentcode.com/"><img src="media/agents/aug.png" height="20" alt="Auggie"></a> |
+| rovo | Rovo Dev | `rovo` | <a href="https://rovo.atlassian.com/"><img src="media/agents/rovo.png" height="20" alt="Rovo Dev"></a> |
+| prime-agent | Prime Agent | `prime-agent` | <a href="https://www.primeintellect.ai/"><img src="media/agents/prime-agent.png" height="20" alt="Prime Agent"></a> |
+| autohand | Autohand | `autohand` | <a href="https://autohand.ai/"><img src="media/agents/autohand.png" height="20" alt="Autohand"></a> |
+| command-code | Command Code | `command-code` | <a href="https://commandcode.ai/"><img src="media/agents/command-code.png" height="20" alt="Command Code"></a> |
+| ante | Ante | `ante` | <a href="https://antigma.ai/"><img src="media/agents/ante.png" height="20" alt="Ante"></a> |
+| codebuff | Codebuff | `codebuff` | <a href="https://codebuff.com/"><img src="media/agents/codebuff.png" height="20" alt="Codebuff"></a> |
+| omp | OMP | `omp` | <a href="https://ohmyposh.dev/"><img src="media/agents/omp.png" height="20" alt="OMP"></a> |
 
 > Logos live in `media/agents/` (PNG). The picker shows only the display name, not the command / id.
 
