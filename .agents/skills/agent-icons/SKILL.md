@@ -17,7 +17,11 @@ It does NOT cover *sourcing a brand-new logo* (no IDEA entry yet). For that, see
 
 1. **Symbol glyph only — no text / wordmark.** A gray "DROID" wordmark (the old `droid.png`) is
    rejected. Crop to the symbol if the asset is wordmark+symbol.
-2. **Keep original brand colors.** Do not recolor to mono.
+2. **Keep original brand colors — never drop them.** When regenerating, rasterize the IDEA
+   *SVG* (which carries the brand color), not a monochrome repo PNG. A repo PNG can be a black/white
+   derivative while the IDEA SVG still has the color — confirmed case: the old `qoder.png` was black,
+   but `qoder.svg` carries the brand green `#2ADB5C` + white. Reusing the monochrome PNG silently loses
+   the brand color.
 3. **Genuine asset only** — never hand-trace. If IDEA has no SVG, use its `.png` as-is.
 4. **`droid` is the one exception to "transparent"**: its genuine IDEA icon is an opaque black
    tile with a white symbol (Factory.ai brand). That solid black square is *correct*, not a defect.
@@ -71,11 +75,20 @@ dimensions first; if the IDEA PNG is already ≥ ~80px it is crisp enough at `he
 - **Format check:** `file media/agents/<id>.png` should show `RGBA` and a square-ish size.
   Non-square landscape (e.g. the old `omp.png` was 2490×1620) should be replaced with the square
   SVG render.
+- **Color check:** a `file` type of `8-bit gray+alpha` or `8-bit colormap` is a *candidate* for lost
+  color — but colormap is NOT proof (`rovo.png` is colormap yet fully colorful). Confirm by viewing,
+  and compare against the IDEA SVG's palette:
+  `grep -oE 'fill="#[0-9a-fA-F]{3,8}"|stop-color="[^"]*"' <id>.svg`. If the IDEA SVG lists multiple
+  brand colors but the repo PNG looks monochrome, regenerate from the SVG (don't reuse the repo PNG).
+  `command-code` is monochrome in IDEA by design (`#000000`) — no change needed there.
 
 ## Checklist
 
 - [ ] IDEA source located at `YOLO/src/main/resources/icons/agents/<id>.<svg|png>` (clone of `https://github.com/cnsharp/YOLO`).
 - [ ] SVG rasterized with `cairosvg -s <scale>` to ~512×512; PNG source copied as-is.
-- [ ] No text/wordmark; original brand colors kept; droid's black tile preserved.
+- [ ] No text/wordmark; original brand colors kept (regenerated from the IDEA SVG, not a monochrome
+  repo copy); droid's black tile preserved.
+- [ ] Color sanity: if the IDEA SVG is multi-color, the installed PNG shows those colors — no silent
+  recolor to mono (the `qoder` bug).
 - [ ] Installed to `media/agents/<id>.png`, RGBA, square.
 - [ ] Orphan icons (unreferenced in agents.json + README) flagged for `git rm`.
