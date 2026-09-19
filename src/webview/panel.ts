@@ -112,6 +112,14 @@ let compiledMatchers: CompiledMatcher[] = [];
 let agents: AgentOption[] = [];
 let selectedAgentId = "";
 
+// Set true once the host delivers `init` (the agent list). Used by the watchdog below to tell a
+// *slow* init (init arrives a bit late, but with agents) from a *missing* one (init never arrives).
+// On a cold Windows start the webview bundle + extension host can take longer than expected, so we
+// must not trip the "failed to load" error just because init showed up after our timer.
+let initReceived = false;
+// Handle to the watchdog timer so we can cancel it the moment `init` lands.
+let missingListTimer: ReturnType<typeof setTimeout> | undefined;
+
 // --- YOLO (skip-permissions) toggle state + icon set (icons come from the host / IDEA edition) ---
 let skipEnabled = false;
 let skipIcons: SkipIconSet | undefined;
@@ -243,6 +251,13 @@ window.addEventListener("message", (ev: MessageEvent) => {
   const msg = ev.data as HostMessage;
   switch (msg.type) {
     case "init":
+      // Cancel the "failed to load" watchdog — the host delivered the list, so even a late init is
+      // a healthy one.
+      initReceived = true;
+      if (missingListTimer) {
+        clearTimeout(missingListTimer);
+        missingListTimer = undefined;
+      }
       matchers = msg.matchers;
       // Compile each matcher's regex once here; provideLinks reuses them instead of recompiling
       // on every row of every render.
@@ -251,6 +266,11 @@ window.addEventListener("message", (ev: MessageEvent) => {
         re: new RegExp(m.source, m.flags.includes("g") ? m.flags : m.flags + "g"),
       }));
       agents = msg.agents || [];
+      // A genuinely empty catalog (agents.json failed to load AND no user `yolo.agents` overrides)
+      // is a real failure — surface it even though `init` was received.
+      if (agents.length === 0) {
+        vscode.postMessage({ type: "agentListMissing" });
+      }
       renderAgentMenu();
       // Pre-select the last-used agent (remembered across opens) if it's still installed; otherwise
       // fall back to the first installed agent. Only set if nothing is selected yet.
@@ -346,12 +366,16 @@ document.getElementById("settings")?.addEventListener("click", () => {
 // terminal work that could throw.
 vscode.postMessage({ type: "ready" });
 
-// Watchdog: if the host never sends the agent list, surface it instead of a silent empty dropdown.
-setTimeout(() => {
-  if (agents.length === 0) {
+// Watchdog: if the host never sends `init`, surface it instead of a silent empty dropdown. We only
+// fire when `init` truly never arrived — a late-but-healthy init cancels this timer in the `init`
+// handler above. The grace period is generous (8s) so a slow cold start (notably on Windows, where
+// the webview bundle + extension host boot can take a few seconds) doesn't trip a false "failed to
+// load" error even though the list eventually appears.
+missingListTimer = setTimeout(() => {
+  if (!initReceived) {
     vscode.postMessage({ type: "agentListMissing" });
   }
-}, 3000);
+}, 8000);
 
 // --- Theme: make xterm follow the active VS Code color theme ---
 // xterm paints its own background over the canvas, so it won't inherit the page's `var(--vscode-…)`
