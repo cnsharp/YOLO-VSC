@@ -112,13 +112,17 @@ let compiledMatchers: CompiledMatcher[] = [];
 let agents: AgentOption[] = [];
 let selectedAgentId = "";
 
-// Set true once the host delivers `init` (the agent list). Used by the watchdog below to tell a
-// *slow* init (init arrives a bit late, but with agents) from a *missing* one (init never arrives).
-// On a cold Windows start the webview bundle + extension host can take longer than expected, so we
-// must not trip the "failed to load" error just because init showed up after our timer.
+// Set true once the host delivers `init` (the agent list). The watchdog below re-requests `init` on a
+// timer and only errors if `init` truly never arrives; a slow cold start (a slow machine / Windows, where
+// the webview bundle + extension host boot can take many seconds) is handled because the late `init`
+// cancels the watchdog the moment it lands.
 let initReceived = false;
 // Handle to the watchdog timer so we can cancel it the moment `init` lands.
 let missingListTimer: ReturnType<typeof setTimeout> | undefined;
+// How many times we've re-requested `init` without receiving it.
+let missingListTries = 0;
+const MISSING_LIST_INTERVAL_MS = 5000;
+const MISSING_LIST_MAX_TRIES = 8; // up to ~40s of retries before reporting a genuine failure
 
 // --- YOLO (skip-permissions) toggle state + icon set (icons come from the host / IDEA edition) ---
 let skipEnabled = false;
@@ -366,16 +370,26 @@ document.getElementById("settings")?.addEventListener("click", () => {
 // terminal work that could throw.
 vscode.postMessage({ type: "ready" });
 
-// Watchdog: if the host never sends `init`, surface it instead of a silent empty dropdown. We only
-// fire when `init` truly never arrived — a late-but-healthy init cancels this timer in the `init`
-// handler above. The grace period is generous (8s) so a slow cold start (notably on Windows, where
-// the webview bundle + extension host boot can take a few seconds) doesn't trip a false "failed to
-// load" error even though the list eventually appears.
-missingListTimer = setTimeout(() => {
-  if (!initReceived) {
-    vscode.postMessage({ type: "agentListMissing" });
-  }
-}, 8000);
+// Watchdog: the host always replies to `ready` with `init`. Re-request `init` on each tick until it
+// arrives, and only report failure after several attempts with no `init`. This avoids a fixed deadline
+// that a slow machine can blow past and then trip a false "failed to load" error even though the list
+// eventually loads. A genuinely empty catalog (agents.json failed to load AND no user overrides) is
+// reported immediately by the `init` handler instead. Re-sending `ready` is safe: `onSpawned` reuses
+// existing tabs by sessionId (createSession), so no duplicate terminals are created.
+function scheduleMissingListCheck(delayMs: number): void {
+  missingListTimer = setTimeout(() => {
+    if (initReceived) {
+      return; // init arrived (possibly from a re-request) — healthy, stop here
+    }
+    if (++missingListTries >= MISSING_LIST_MAX_TRIES) {
+      vscode.postMessage({ type: "agentListMissing" });
+      return;
+    }
+    vscode.postMessage({ type: "ready" }); // re-request the agent list
+    scheduleMissingListCheck(MISSING_LIST_INTERVAL_MS);
+  }, delayMs);
+}
+scheduleMissingListCheck(MISSING_LIST_INTERVAL_MS);
 
 // --- Theme: make xterm follow the active VS Code color theme ---
 // xterm paints its own background over the canvas, so it won't inherit the page's `var(--vscode-…)`
