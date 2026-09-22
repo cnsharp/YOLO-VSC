@@ -7,6 +7,9 @@ out/
 
 # user workspace settings
 .vscode/
+!.vscode/
+!.vscode/launch.json
+!.vscode/tasks.json
 
 # generated webview bundle (esbuild build output)
 media/dist/
