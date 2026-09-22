@@ -112,17 +112,12 @@ let compiledMatchers: CompiledMatcher[] = [];
 let agents: AgentOption[] = [];
 let selectedAgentId = "";
 
-// Set true once the host delivers `init` (the agent list). The watchdog below re-requests `init` on a
-// timer and only errors if `init` truly never arrives; a slow cold start (a slow machine / Windows, where
-// the webview bundle + extension host boot can take many seconds) is handled because the late `init`
-// cancels the watchdog the moment it lands.
-let initReceived = false;
-// Handle to the watchdog timer so we can cancel it the moment `init` lands.
-let missingListTimer: ReturnType<typeof setTimeout> | undefined;
-// How many times we've re-requested `init` without receiving it.
-let missingListTries = 0;
-const MISSING_LIST_INTERVAL_MS = 5000;
-const MISSING_LIST_MAX_TRIES = 8; // up to ~40s of retries before reporting a genuine failure
+// Whether the host has delivered `init` yet. Until it does we render a "Loading agents…"
+// placeholder. We deliberately use NO timeout/watchdog: the host always replies to `ready` with
+// `init` while it is alive, and the scan time is unbounded (it grows with the number of supported
+// agents), so any deadline would eventually false-trip on a slow machine. A missing `init` simply
+// leaves the loading state up — never a scary error.
+let listLoaded = false;
 
 // --- YOLO (skip-permissions) toggle state + icon set (icons come from the host / IDEA edition) ---
 let skipEnabled = false;
@@ -202,6 +197,12 @@ function renderAgentMenu(): void {
   if (!menu) {
     return;
   }
+  // Before `init` arrives we don't yet know the catalog — show a loading placeholder rather than a
+  // false "no agents" / error. There is intentionally no timeout: the scan is unbounded.
+  if (!listLoaded) {
+    menu.innerHTML = `<div class="agent-empty">Loading agents…</div>`;
+    return;
+  }
   // Only show agents that resolved on PATH.
   const visible = agents.filter((a) => a.resolvedPath);
   if (visible.length === 0) {
@@ -255,13 +256,9 @@ window.addEventListener("message", (ev: MessageEvent) => {
   const msg = ev.data as HostMessage;
   switch (msg.type) {
     case "init":
-      // Cancel the "failed to load" watchdog — the host delivered the list, so even a late init is
-      // a healthy one.
-      initReceived = true;
-      if (missingListTimer) {
-        clearTimeout(missingListTimer);
-        missingListTimer = undefined;
-      }
+      // The host delivered the list — mark it loaded and render. A late init (slow scan / cold
+      // start) is just as healthy as an early one; there is no watchdog to cancel.
+      listLoaded = true;
       matchers = msg.matchers;
       // Compile each matcher's regex once here; provideLinks reuses them instead of recompiling
       // on every row of every render.
@@ -270,10 +267,16 @@ window.addEventListener("message", (ev: MessageEvent) => {
         re: new RegExp(m.source, m.flags.includes("g") ? m.flags : m.flags + "g"),
       }));
       agents = msg.agents || [];
-      // A genuinely empty catalog (agents.json failed to load AND no user `yolo.agents` overrides)
-      // is a real failure — surface it even though `init` was received.
+      // A genuinely empty catalog (agents.json failed to load AND no user `yolo.agents`
+      // overrides) is a real failure. We no longer surface it as a popup error (the scan time
+      // is unbounded, so any deadline would false-trip on a slow machine) — log it to the
+      // console for diagnosis and let the picker show the friendly "No agents detected" message.
       if (agents.length === 0) {
-        vscode.postMessage({ type: "agentListMissing" });
+        console.warn(
+          "[YOLO] Agent list is empty — agents.json may have failed to load, " +
+            "or no agents are installed/resolved on PATH. Check the extension host console " +
+            "for an 'failed to load agents.json' error."
+        );
       }
       renderAgentMenu();
       // Pre-select the last-used agent (remembered across opens) if it's still installed; otherwise
@@ -367,29 +370,14 @@ document.getElementById("settings")?.addEventListener("click", () => {
 });
 
 // Tell the host we're ready to receive the agent list + matchers. This MUST happen before any
-// terminal work that could throw.
+// terminal work that could throw. The host always replies with `init` while it is alive — we do not
+// re-request on a timer, because the scan time is unbounded (it grows with the number of supported
+// agents) and any deadline would eventually false-trip on a slow machine. Until `init` arrives the
+// picker shows a "Loading agents…" placeholder; a genuinely empty catalog is rendered as a friendly
+// message by the `init` handler instead of an error.
 vscode.postMessage({ type: "ready" });
-
-// Watchdog: the host always replies to `ready` with `init`. Re-request `init` on each tick until it
-// arrives, and only report failure after several attempts with no `init`. This avoids a fixed deadline
-// that a slow machine can blow past and then trip a false "failed to load" error even though the list
-// eventually loads. A genuinely empty catalog (agents.json failed to load AND no user overrides) is
-// reported immediately by the `init` handler instead. Re-sending `ready` is safe: `onSpawned` reuses
-// existing tabs by sessionId (createSession), so no duplicate terminals are created.
-function scheduleMissingListCheck(delayMs: number): void {
-  missingListTimer = setTimeout(() => {
-    if (initReceived) {
-      return; // init arrived (possibly from a re-request) — healthy, stop here
-    }
-    if (++missingListTries >= MISSING_LIST_MAX_TRIES) {
-      vscode.postMessage({ type: "agentListMissing" });
-      return;
-    }
-    vscode.postMessage({ type: "ready" }); // re-request the agent list
-    scheduleMissingListCheck(MISSING_LIST_INTERVAL_MS);
-  }, delayMs);
-}
-scheduleMissingListCheck(MISSING_LIST_INTERVAL_MS);
+// Populate the picker with the loading placeholder until `init` arrives.
+renderAgentMenu();
 
 // --- Theme: make xterm follow the active VS Code color theme ---
 // xterm paints its own background over the canvas, so it won't inherit the page's `var(--vscode-…)`

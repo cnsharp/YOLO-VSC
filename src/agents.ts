@@ -55,7 +55,7 @@ export function initBuiltInAgents(ctx: vscode.ExtensionContext): void {
     }
     builtInAgents = parsed as AgentConfig[];
   } catch (e) {
-    console.error("[agentyolo] failed to load agents.json:", e);
+    console.error("[YOLO] the agent list failed to load: could not read agents.json.", e);
     builtInAgents = [];
   }
 }
