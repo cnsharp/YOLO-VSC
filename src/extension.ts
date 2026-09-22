@@ -11,9 +11,11 @@ export function activate(context: vscode.ExtensionContext): void {
   // Load the built-in agent catalog from agents.json (data, not code).
   initBuiltInAgents(context);
 
-  // Mirror the IntelliJ behaviour: on startup, re-scan installed agents so the dropdown reflects
-  // anything installed after first run.
-  settings.syncInstalledAgents(
+  // Re-scan installed agents in the background so the panel reflects anything
+  // installed after first run. The panel renders cache-first from the persisted
+  // installed set and re-renders once this probe lands (mirrors `main`'s
+  // cache-first + background-refresh model).
+  void settings.syncInstalledAgents(
     resolveAgents().map((a) => ({ id: a.id, command: a.command })),
     settings.getCustomTools(),
     canExecute

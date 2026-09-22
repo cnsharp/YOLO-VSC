@@ -74,7 +74,7 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
         // Only re-probe installed agents when the agent list itself changed; toggling YOLO/Resume
         // merely re-sends init so the panel reflects the persisted setting.
         if (e.affectsConfiguration("yolo.agents")) {
-          settings.syncInstalledAgents(
+          void settings.syncInstalledAgents(
             resolveAgents().map((a) => ({ id: a.id, command: a.command })),
             settings.getCustomTools(),
             canExecute
@@ -126,13 +126,22 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
   private agentOptions(): AgentOption[] {
     const seen = new Set<string>();
     const out: AgentOption[] = [];
-    // All agents (built-ins from agents.json + user `yolo.agents` overrides) are data-driven; the
-    // code holds no agent list of its own.
+    // Cache-first: render only agents in the persisted installed set (seeded at
+    // startup, refreshed in the background by `syncInstalledAgents`). This avoids
+    // re-probing every agent's PATH on each render — the same cache-first choice
+    // `main` makes for its launcher. `resolvePath` is still called, but only for
+    // the already-installed agents (for display), not the whole catalog.
+    const installed = new Set(
+      settings.getInstalledCommands().map((c) => c.toLowerCase())
+    );
     for (const def of resolveAgents()) {
       if (seen.has(def.id)) {
         continue;
       }
       seen.add(def.id);
+      if (!installed.has(def.command.toLowerCase())) {
+        continue;
+      }
       out.push({
         id: def.id,
         displayName: def.displayName,

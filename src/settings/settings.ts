@@ -120,16 +120,27 @@ export function getShellArgs(): string[] {
 }
 
 /**
- * On startup, detect installed promoted/custom agents and merge them into the config so the panel
- * reflects the latest install state. Idempotent: never removes existing entries.
+ * Recompute the installed agent set from a live PATH probe and persist it, so the
+ * panel reflects the latest install state. Mirrors the `main` product's
+ * cache-first + background-refresh behaviour:
+ *
+ *  - It runs without blocking activation (the probes are deferred), so the panel
+ *    renders instantly from the persisted `installedCommands` and updates when
+ *    this write lands (which fires `onDidChangeConfiguration` → re-render).
+ *  - It is a FULL re-probe, not an append-only merge, so an agent uninstalled
+ *    since the last run is dropped (pruned) rather than lingering — the same
+ *    correctness guarantee `main` gets from rebuilding its cache each refresh.
  */
-export function syncInstalledAgents(
+export async function syncInstalledAgents(
   promoted: { id: string; command: string }[],
   custom: UserAgentOverride[],
   canExecute: (cmd: string) => boolean
-): void {
+): Promise<void> {
+  // Defer the per-command probes so activation isn't blocked; the panel shows the
+  // cached set immediately and re-renders once this completes.
+  await new Promise<void>((resolve) => setImmediate(resolve));
+
   const installed = new Set([
-    ...getInstalledCommands(),
     ...promoted.filter((p) => canExecute(p.command)).map((p) => p.command.toLowerCase()),
     ...custom.filter((c) => canExecute(c.command)).map((c) => c.command.toLowerCase()),
   ]);
