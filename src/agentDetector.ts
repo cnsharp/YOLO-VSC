@@ -1,23 +1,24 @@
 // Agent detection: can the command actually be executed?
 //
-// Detection now resolves commands via the FILESYSTEM (not by spawning a login
+// Detection resolves commands via the FILESYSTEM (not by spawning a login
 // shell per agent). The old approach ran `execSync("$SHELL -lc 'command -v …'")`
-// once per agent during `sendInit` — serially, on the extension-host thread —
-// which on a slow machine (and on Windows) meant dozens of blocking shell
-// spawns and a multi-second freeze, so the webview's `init` arrived late and
-// tripped the "agent list failed to load" error even though it eventually
-// succeeded.
+// once per agent — serially, on the extension-host thread — which on a slow
+// machine (and on Windows) meant dozens of blocking shell spawns and a
+// multi-second freeze.
 //
-// The filesystem scan below mirrors the proven detection in the sibling
-// ai-agents-terminal-vsc product: it looks in well-known install dirs
+// The filesystem scan below looks in well-known install dirs
 // (nvm/fnm/Homebrew/volta/.local/.codebuddy) plus the current process PATH
 // using `fs.statSync`. That is near-instant, shell/profile-independent (so a
 // GUI-launched VS Code — which starts with a minimal PATH — still finds agents
 // installed under nvm/fnm/brew), and never blocks the host.
+//
+// This file is shared verbatim between the two product branches; keep it
+// identical on both sides. There is no product-specific logic here.
 
 import * as os from "os";
 import * as fs from "fs";
 import * as path from "path";
+import { execFileSync } from "child_process";
 
 /**
  * Candidate bin directories where AI-agent CLIs are commonly installed,
@@ -71,15 +72,16 @@ function candidateBinDirs(): string[] {
 }
 
 /** The single source of truth for where agents may live: the well-known
- *  install dirs (nvm/fnm/Homebrew/volta/…), the standard system bindirs, and
- *  the current process PATH. Both detection (`findExecutablePath`) and the
- *  launched terminal's PATH (`boostedPath`) derive from this list, so they can
- *  never drift apart. De-duplicated, order-preserving.
+ *  install dirs (nvm/fnm/Homebrew/volta/…), the standard system bindirs, the
+ *  login-shell PATH, and the current process PATH. Both detection
+ *  (`findExecutablePath`) and the launched terminal's PATH (`boostedPath`) derive
+ *  from this list, so they can never drift apart. De-duplicated,
+ *  order-preserving.
  *
  *  Memoized: PATH does not change within an extension-host session, and this
- *  list is read once per `findExecutablePath` call (so ~N times on the first
- *  `sendInit` before the per-command cache fills). Computing it once avoids
- *  repeating the `readdirSync` probes on nvm/fnm on every agent. */
+ *  list is read once per `findExecutablePath` call. Computing it once avoids
+ *  repeating the `readdirSync` probes on nvm/fnm on every agent, and — crucially
+ *  — avoids re-running the login-shell spawn on every agent. */
 let searchDirsCache: string[] | undefined;
 export function searchDirs(): string[] {
   if (searchDirsCache) {
@@ -91,6 +93,7 @@ export function searchDirs(): string[] {
     "/bin",
     "/usr/sbin",
     "/sbin",
+    ...loginShellPathDirs(),
     ...(process.env.PATH ? process.env.PATH.split(path.delimiter) : []),
   ];
   const seen = new Set<string>();
@@ -103,6 +106,48 @@ export function searchDirs(): string[] {
   }
   searchDirsCache = out;
   return out;
+}
+
+/**
+ * Capture the login shell's PATH ONCE (cached, best-effort, timeout-bounded).
+ *
+ * A GUI-launched VS Code (Dock/Spotlight) starts the extension host with a
+ * minimal environment: `process.env.PATH` lacks the dirs your shell rc injects
+ * (e.g. `~/.qoder/entry`, nvm/fnm versions, custom tool bins). The fixed
+ * candidate dirs above cover the common managers, but not arbitrary rc-added
+ * entries — so agents installed there were missed ("No agents detected").
+ *
+ * We ask the user's LOGIN shell for its PATH a SINGLE time and fold those dirs
+ * into the search. This is one spawn at startup (cached for the session), NOT
+ * a per-agent shell spawn, so it does not reintroduce a slow startup. On
+ * Windows this is a no-op (PATH comes from the process env), and any failure is
+ * swallowed — detection still works via the candidate dirs + process PATH.
+ */
+let loginPathCache: string[] | undefined;
+
+function loginShellPathDirs(): string[] {
+  if (loginPathCache) {
+    return loginPathCache;
+  }
+  loginPathCache = [];
+  if (process.platform === "win32") {
+    return loginPathCache;
+  }
+  const shell = process.env.SHELL || "/bin/zsh";
+  try {
+    const out = execFileSync(shell, ["-lc", 'printf "%s" "$PATH"'], {
+      timeout: 5000,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    loginPathCache = out
+      .split(path.delimiter)
+      .map((d) => d.trim())
+      .filter(Boolean);
+  } catch {
+    // Swallow: detection still works via the candidate dirs + process PATH.
+  }
+  return loginPathCache;
 }
 
 /** Find the absolute path of an installed agent command, or undefined. */
@@ -146,10 +191,9 @@ export function boostedPath(): string {
 }
 
 // Detection results are cached for the lifetime of the extension host. The same
-// command is probed repeatedly — once per `sendInit` (the webview re-requests
-// `init` via the watchdog loop, and re-shows the panel), and again per agent in
-// the settings + picker filters — so caching keeps repeated loads near-instant
-// and stops a slow machine from re-scanning on every request.
+// command is probed repeatedly across agent-list renders and picker/settings
+// filters, so caching keeps repeated loads near-instant and stops a slow machine
+// from re-scanning on every request.
 const cache = new Map<string, string | undefined>();
 
 function cachedResolve(command: string): string | undefined {
@@ -169,4 +213,9 @@ export function resolvePath(command: string): string | undefined {
 /** Whether the command can actually be executed — resolvable to an executable file. */
 export function canExecute(command: string): boolean {
   return cachedResolve(command) !== undefined;
+}
+
+/** Alias of `canExecute`, kept so both product branches can use their preferred name. */
+export function isInstalled(command: string): boolean {
+  return canExecute(command);
 }
