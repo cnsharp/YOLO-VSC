@@ -10,7 +10,6 @@
 //                       the user interacts there directly. (Output can't be mirrored back into the webview
 //                       without a proposed/blocked API, so the embedded terminal is unused in this mode.)
 
-import * as pty from "node-pty";
 import * as os from "os";
 import * as vscode from "vscode";
 import { resolveLaunchShell } from "./shell";
@@ -61,7 +60,18 @@ export function spawnAgent(opts: SpawnOptions): SpawnResult {
   }
   const { shell, args } = resolveLaunchShell(fullCommand, Boolean(opts.preferPosix), true);
 
+  let pty: typeof import("node-pty") | undefined;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    pty = require("node-pty") as typeof import("node-pty");
+  } catch {
+    pty = undefined;
+  }
+
+  try {
+    if (!pty) {
+      throw new Error("node-pty unavailable");
+    }
     const ptyProcess = pty.spawn(shell, args, {
       name: "xterm-256color",
       cols: opts.cols ?? 80,

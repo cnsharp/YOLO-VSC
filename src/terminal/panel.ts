@@ -74,11 +74,13 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
         // Only re-probe installed agents when the agent list itself changed; toggling YOLO/Resume
         // merely re-sends init so the panel reflects the persisted setting.
         if (e.affectsConfiguration("yolo.agents")) {
-          void settings.syncInstalledAgents(
-            resolveAgents().map((a) => ({ id: a.id, command: a.command })),
-            settings.getCustomTools(),
-            canExecute
-          );
+          void settings
+            .syncInstalledAgents(
+              resolveAgents().map((a) => ({ id: a.id, command: a.command })),
+              settings.getCustomTools(),
+              canExecute
+            )
+            .then(() => this.sendInit());
         }
         this.sendInit();
       }
@@ -91,8 +93,11 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
       enableScripts: true,
       localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, "media")],
     };
-    view.webview.html = this.html();
+    // Register the message handler BEFORE setting html: when the webview script loads it immediately
+    // posts `ready` + its first `log` lines. If the handler were attached after `html`, those early
+    // posts would be dropped (the same round-trip-loss that the `ready` re-request loop works around).
     view.webview.onDidReceiveMessage((msg) => this.onMessage(msg));
+    view.webview.html = this.html();
     // Detach only — keep the running PTY alive across view hide/dispose so the session survives. The
     // new webview re-attaches to the existing PTY in the `ready` handler. (We dispose the PTY only on a
     // fresh launch or extension deactivation.)
@@ -210,7 +215,7 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
     return renderPanelHtml(csp, scriptUri, styleUri);
   }
 
-  private sendInit(): void {
+  public sendInit(): void {
     const agents = this.agentOptions();
     this.view?.webview.postMessage({
       type: "init",

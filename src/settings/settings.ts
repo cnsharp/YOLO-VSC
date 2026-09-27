@@ -85,11 +85,25 @@ export function setAgentBaseArgs(map: Record<string, string>): void {
   cfg().update("agentBaseArgs", map, vscode.ConfigurationTarget.Global);
 }
 
+/**
+ * In-memory mirror of the installed-agent set. `cfg().update(...)` is asynchronous in real VS Code —
+ * the write isn't observable on the very next `cfg().get(...)` within the same tick. Reading the list
+ * straight from config right after `setInstalledCommands` therefore returns the STALE value, which
+ * left the post-scan `init` (and thus the panel) stuck on "No agents detected". Keeping a synchronous
+ * cache here removes that race; we still persist to `yolo.installedCommands` for next-session startup.
+ */
+let installedCache: string[] | null = null;
+
 export function getInstalledCommands(): string[] {
-  return cfg().get<string[]>("installedCommands", []);
+  if (installedCache) {
+    return installedCache;
+  }
+  installedCache = cfg().get<string[]>("installedCommands", []);
+  return installedCache;
 }
 
 export function setInstalledCommands(commands: string[]): void {
+  installedCache = commands;
   cfg().update("installedCommands", commands, vscode.ConfigurationTarget.Global);
 }
 

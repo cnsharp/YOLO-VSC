@@ -267,17 +267,6 @@ window.addEventListener("message", (ev: MessageEvent) => {
         re: new RegExp(m.source, m.flags.includes("g") ? m.flags : m.flags + "g"),
       }));
       agents = msg.agents || [];
-      // A genuinely empty catalog (agents.json failed to load AND no user `yolo.agents`
-      // overrides) is a real failure. We no longer surface it as a popup error (the scan time
-      // is unbounded, so any deadline would false-trip on a slow machine) — log it to the
-      // console for diagnosis and let the picker show the friendly "No agents detected" message.
-      if (agents.length === 0) {
-        console.warn(
-          "[YOLO] Agent list is empty — agents.json may have failed to load, " +
-            "or no agents are installed/resolved on PATH. Check the extension host console " +
-            "for an 'failed to load agents.json' error."
-        );
-      }
       renderAgentMenu();
       // Pre-select the last-used agent (remembered across opens) if it's still installed; otherwise
       // fall back to the first installed agent. Only set if nothing is selected yet.
@@ -369,15 +358,24 @@ document.getElementById("settings")?.addEventListener("click", () => {
   vscode.postMessage({ type: "openSettings" });
 });
 
-// Tell the host we're ready to receive the agent list + matchers. This MUST happen before any
-// terminal work that could throw. The host always replies with `init` while it is alive — we do not
-// re-request on a timer, because the scan time is unbounded (it grows with the number of supported
-// agents) and any deadline would eventually false-trip on a slow machine. Until `init` arrives the
-// picker shows a "Loading agents…" placeholder; a genuinely empty catalog is rendered as a friendly
-// message by the `init` handler instead of an error.
-vscode.postMessage({ type: "ready" });
+// Tell the host we're ready to receive the agent list + matchers. The host replies with `init`,
+// but that first reply can be lost if it was sent by `resolveWebviewView` before this webview's
+// message listener attached. So we re-request until `init` actually lands — bounded and silent (no
+// error popup): just keep asking while the host is alive. Because detection + init are now cached,
+// each re-request is instant, so this adds no real cost even on a slow machine.
+function requestInit(): void {
+  vscode.postMessage({ type: "ready" });
+}
+requestInit();
 // Populate the picker with the loading placeholder until `init` arrives.
 renderAgentMenu();
+const initRetry = setInterval(() => {
+  if (listLoaded) {
+    clearInterval(initRetry);
+    return;
+  }
+  requestInit();
+}, 1000);
 
 // --- Theme: make xterm follow the active VS Code color theme ---
 // xterm paints its own background over the canvas, so it won't inherit the page's `var(--vscode-…)`

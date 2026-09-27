@@ -11,20 +11,26 @@ export function activate(context: vscode.ExtensionContext): void {
   // Load the built-in agent catalog from agents.json (data, not code).
   initBuiltInAgents(context);
 
-  // Re-scan installed agents in the background so the panel reflects anything
-  // installed after first run. The panel renders cache-first from the persisted
-  // installed set and re-renders once this probe lands (mirrors `main`'s
-  // cache-first + background-refresh model).
-  void settings.syncInstalledAgents(
-    resolveAgents().map((a) => ({ id: a.id, command: a.command })),
-    settings.getCustomTools(),
-    canExecute
-  );
-
   const panel = new YoloViewProvider(context.extensionUri);
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(YoloViewProvider.viewType, panel)
   );
+
+  // Re-scan installed agents in the background so the panel reflects anything
+  // installed after first run. The panel renders cache-first from the persisted
+  // installed set and re-renders once this probe lands (mirrors `main`'s
+  // cache-first + background-refresh model). When it completes we re-send `init`
+  // so a panel that opened BEFORE the scan finished (and thus got an empty list)
+  // gets refreshed — otherwise it would stay on "No agents detected" until a
+  // manual reload. `sendInit` is a no-op while the view isn't open yet.
+  settings
+    .syncInstalledAgents(
+      resolveAgents().map((a) => ({ id: a.id, command: a.command })),
+      settings.getCustomTools(),
+      canExecute
+    )
+    .then(() => panel.sendInit())
+    .catch((e) => console.error("[YOLO] syncInstalledAgents threw:", e));
   // Kill the running PTY on extension deactivation so the agent process isn't orphaned. The session is
   // intentionally kept alive across view hide/move (re-attached, not disposed); only full deactivation
   // tears it down.

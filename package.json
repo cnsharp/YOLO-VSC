@@ -2,7 +2,7 @@
   "name": "agentyolo",
   "displayName": "Agent YOLO",
   "description": "Launch AI CLI agents (Claude Code, Codex, Cursor CLI, …) in an embedded terminal with clickable file/type links.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "cnsharp",
   "repository": {
     "type": "git",
