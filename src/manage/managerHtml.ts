@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { t } from "../l10n";
 
 /** Render the Agent Manager page HTML. References the esbuild-bundled script from media/dist;
  *  the card grid itself is built dynamically by the script (statuses change per agent). */
@@ -11,7 +12,7 @@ export function renderManagerHtml(cspSource: string, scriptUri: vscode.Uri): str
   <meta
     http-equiv="Content-Security-Policy"
     content="default-src 'none'; style-src ${cspSource} 'unsafe-inline'; img-src ${cspSource} https: data:; script-src ${cspSource};" />
-  <title>Agent YOLO: Manage Agents</title>
+  <title>${t("manage.title")}</title>
   <style>
     html, body { margin: 0; padding: 0; background: var(--vscode-editor-background, #1e1e1e); color: var(--vscode-editor-foreground, #cccccc); font-family: var(--vscode-font-family); }
     #topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 10px; padding: 10px 18px; background: var(--vscode-editor-background, #1e1e1e); border-bottom: 1px solid var(--vscode-panel-border, #333); }
@@ -20,6 +21,7 @@ export function renderManagerHtml(cspSource: string, scriptUri: vscode.Uri): str
     #topbar button:hover:not(:disabled) { background: var(--vscode-button-secondaryHoverBackground, #444); }
     #topbar button:disabled { opacity: 0.5; cursor: default; }
     #upgradeAll { background: var(--vscode-button-background, #0e639c) !important; color: var(--vscode-button-foreground, #ffffff) !important; border-color: transparent !important; }
+    #statusline { font-size: 12px; color: var(--vscode-descriptionForeground, #999999); }
     #content { max-width: 1400px; margin: 0 auto; padding: 14px 18px 40px; }
     #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
     .card { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--vscode-panel-border, #333); border-radius: 6px; background: var(--vscode-editorWidget-background, rgba(40,40,40,0.6)); }
@@ -37,6 +39,7 @@ export function renderManagerHtml(cspSource: string, scriptUri: vscode.Uri): str
     .card .row .v { font-family: var(--vscode-editor-font-family, monospace); white-space: nowrap; }
     .card .row .v.loading { color: var(--vscode-descriptionForeground, #999999); }
     .card .error { font-size: 11px; color: var(--vscode-errorForeground, #f48771); word-break: break-word; }
+    .card .ok { font-size: 11px; color: var(--vscode-descriptionForeground, #999999); word-break: break-word; }
     .card .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: auto; }
     .card .actions button { background: var(--vscode-button-secondaryBackground, #3a3a3a); color: var(--vscode-button-secondaryForeground, #cccccc); border: 1px solid var(--vscode-panel-border, #555); padding: 3px 12px; border-radius: 3px; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; }
     .card .actions button:hover:not(:disabled) { background: var(--vscode-button-secondaryHoverBackground, #444); }
@@ -50,13 +53,14 @@ export function renderManagerHtml(cspSource: string, scriptUri: vscode.Uri): str
 </head>
 <body>
   <div id="topbar">
-    <h1>Agent environment</h1>
-    <button id="refresh" type="button">Refresh</button>
-    <button id="upgradeAll" type="button" disabled>Upgrade All</button>
+    <h1>${t("manage.heading")}</h1>
+    <button id="refresh" type="button">${t("manage.checkUpdates")}</button>
+    <button id="upgradeAll" type="button" disabled>${t("manage.updateAll")}</button>
+    <span id="statusline"></span>
   </div>
   <div id="content">
     <div id="grid"></div>
-    <div id="empty" hidden>No agents configured.</div>
+    <div id="empty" hidden>${t("manage.empty")}</div>
   </div>
   <script src="${scriptUri}"></script>
 </body>

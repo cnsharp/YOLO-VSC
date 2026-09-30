@@ -25,13 +25,14 @@
     "onCommand:yolo.openManager"
   ],
   "main": "./out/extension.js",
+  "l10n": "./l10n",
   "contributes": {
     "configuration": {
       "title": "Agent YOLO",
       "properties": {
         "yolo.agents": {
           "type": "array",
-          "markdownDescription": "User overrides / additions merged on top of the built-in catalog in agents.json. Override a built-in by matching its `command` (only the fields you set replace it, including `skipFlag` and `resumeFlag`); set `enabled: false` to hide a built-in; use a `command` not in agents.json to add a custom agent.\n\nEdit it directly in **VS Code Settings** — there is no in-panel Settings UI; changes apply on the next launch. Example — change Claude's resume flag and hide Gemini:\n```json\n\"yolo.agents\": [\n  { \"command\": \"claude\", \"resumeFlag\": \"--continue\" },\n  { \"command\": \"gemini\", \"enabled\": false }\n]\n```\n\nLaunch args are ordered `baseArgs` → `skipFlag` → `resumeFlag`; `skipFlag` only appends when YOLO (skip-permissions) mode is on, `resumeFlag` only when Resume mode is on.",
+          "markdownDescription": "%config.yolo.agents.markdownDescription%",
           "items": {
             "type": "object",
             "required": [
@@ -133,7 +134,7 @@
         "yolo.permissionRules": {
           "type": "array",
           "default": [],
-          "markdownDescription": "Per-agent skip-permission flag, as a single list of `{ agentId, flag }` entries. `agentId` matches an agent's `command` or `id`; the `flag` is appended when YOLO mode is on, taking precedence over the agent's own `skipFlag` in `yolo.agents`. Prefer setting `skipFlag` directly on the agent in `yolo.agents`; use this only when you want one shared list. Example:\n```json\n\"yolo.permissionRules\": [\n  { \"agentId\": \"claude\", \"flag\": \"--dangerously-skip-permissions\" },\n  { \"agentId\": \"codex\", \"flag\": \"--full-auto\" }\n]\n```",
+          "markdownDescription": "%config.yolo.permissionRules.markdownDescription%",
           "items": {
             "type": "object",
             "required": [
@@ -164,17 +165,22 @@
         "yolo.skipEnabled": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "YOLO mode: launch agents with their skip-permission (auto-approve) flag so they run without permission prompts. Toggle it from the `$(zap)` button in the panel."
+          "markdownDescription": "%config.yolo.skipEnabled.markdownDescription%"
         },
         "yolo.resumeMode": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "Resume mode: launch agents with their `resumeFlag` to continue the most recent session. Toggle it from the `$(history)` button in the panel."
+          "markdownDescription": "%config.yolo.resumeMode.markdownDescription%"
+        },
+        "yolo.suppressSkipWarning": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "%config.yolo.suppressSkipWarning.markdownDescription%"
         },
         "yolo.lastAgentId": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Internal: the `id` of the agent last selected/launched, so the panel can pre-select it next time it opens. Set automatically — you normally don't edit this."
+          "markdownDescription": "%config.yolo.lastAgentId.markdownDescription%"
         },
         "yolo.agentResumeFlags": {
           "type": "object",
@@ -182,22 +188,22 @@
             "type": "string"
           },
           "default": {},
-          "markdownDescription": "Per-agent override of the resume flag used when Resume mode is on, keyed by agent `command` or `id`. Takes precedence over the built-in `resumeFlag` in agents.json / `yolo.agents`. Use this to tune resume behaviour per agent (e.g. choose between an interactive session picker and resuming the latest automatically) without editing agents.json. Example:\n```json\n\"yolo.agentResumeFlags\": {\n  \"codebuddy\": \"-r\",\n  \"claude\": \"--resume\"\n}\n```\nWhen an agent is absent here, its `resumeFlag` from agents.json (or `yolo.agents`) is used."
+          "markdownDescription": "%config.yolo.agentResumeFlags.markdownDescription%"
         },
         "yolo.agentBaseArgs": {
           "type": "object",
           "default": {},
-          "markdownDescription": "Extra launch args per agent, keyed by the agent's lower-cased `id` (falls back to a match against `command`). Appended after the agent's own `baseArgs` from `yolo.agents`. Prefer setting `baseArgs` on the agent in `yolo.agents`; use this only when you want one shared map. Example:\n```json\n\"yolo.agentBaseArgs\": { \"cursor-agent\": \"agent\", \"kilo\": \"run\" }\n```"
+          "markdownDescription": "%config.yolo.agentBaseArgs.markdownDescription%"
         },
         "yolo.installedCommands": {
           "type": "array",
           "default": [],
-          "markdownDescription": "Internal cache of AI agent commands detected on PATH. Maintained automatically — do not edit by hand. (internal)"
+          "markdownDescription": "%config.yolo.installedCommands.markdownDescription%"
         },
         "yolo.shell": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Override the shell used to launch agents and probe PATH. Absolute path or a binary name on PATH. On Windows, leaving this empty auto-detects a POSIX shell (Git Bash / WSL) when needed; otherwise `cmd.exe` is used."
+          "markdownDescription": "%config.yolo.shell.markdownDescription%"
         },
         "yolo.shellArgs": {
           "type": "array",
@@ -205,20 +211,20 @@
             "type": "string"
           },
           "default": [],
-          "markdownDescription": "Extra arguments passed to the shell before the agent command (e.g. `[\"-l\"]`). Ignored on Windows `cmd.exe`."
+          "markdownDescription": "%config.yolo.shellArgs.markdownDescription%"
         }
       }
     },
     "commands": [
       {
         "command": "yolo.openPanel",
-        "title": "Agent YOLO: Open Agents Panel",
+        "title": "%command.openPanel.title%",
         "category": "Agent YOLO",
         "icon": "$(y)"
       },
       {
         "command": "yolo.openManager",
-        "title": "Agent YOLO: Manage Agents",
+        "title": "%command.openManager.title%",
         "category": "Agent YOLO",
         "icon": "$(gear)"
       }
@@ -227,7 +233,7 @@
       "activitybar": [
         {
           "id": "yolo-agents",
-          "title": "Agent YOLO",
+          "title": "%viewsContainers.yolo-agents.title%",
           "icon": "media/icons/panelIcon.png"
         }
       ]
@@ -238,7 +244,7 @@
           "icon": "media/icons/panelIcon.png",
           "type": "webview",
           "id": "yolo.panel",
-          "name": "AI Agents",
+          "name": "%views.yolo.panel.name%",
           "retainContextWhenHidden": true
         }
       ]

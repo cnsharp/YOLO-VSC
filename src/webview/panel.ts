@@ -112,6 +112,13 @@ let compiledMatchers: CompiledMatcher[] = [];
 let agents: AgentOption[] = [];
 let selectedAgentId = "";
 
+/** Localized strings pushed by the host with `init` (the webview has no access to vscode.l10n).
+ *  Until `init` lands, `t()` falls back to the key's English text in the bundle. */
+let strings: Record<string, string> = {};
+function t(key: string, fallback: string): string {
+  return strings[key] ?? fallback;
+}
+
 // Whether the host has delivered `init` yet. Until it does we render a "Loading agents…"
 // placeholder. We deliberately use NO timeout/watchdog: the host always replies to `ready` with
 // `init` while it is alive, and the scan time is unbounded (it grows with the number of supported
@@ -200,16 +207,16 @@ function renderAgentMenu(): void {
   // Before `init` arrives we don't yet know the catalog — show a loading placeholder rather than a
   // false "no agents" / error. There is intentionally no timeout: the scan is unbounded.
   if (!listLoaded) {
-    menu.innerHTML = `<div class="agent-empty">Loading agents…</div>`;
+    menu.innerHTML = `<div class="agent-empty">${t("panel.loadingAgents", "Loading agents…")}</div>`;
     return;
   }
   // Only show agents that resolved on PATH.
   const visible = agents.filter((a) => a.resolvedPath);
   if (visible.length === 0) {
-    menu.innerHTML = `<div class="agent-empty">No agents detected on PATH.<br/>Install one or check settings.</div>`;
+    menu.innerHTML = `<div class="agent-empty">${t("panel.noAgents", "No agents detected on PATH.")}<br/>${t("panel.noAgentsHint", "Install one or check settings.")}</div>`;
     const btn = document.getElementById("agentBtn") as HTMLButtonElement | null;
     if (btn) {
-      btn.textContent = "Select agent…";
+      btn.textContent = t("panel.selectAgent", "Select agent…");
     }
     return;
   }
@@ -229,7 +236,7 @@ function renderAgentMenu(): void {
   const btn = document.getElementById("agentBtn") as HTMLButtonElement | null;
   const sel = agents.find((a) => a.id === selectedAgentId);
   if (btn) {
-    btn.textContent = sel ? sel.displayName : "Select agent…";
+    btn.textContent = sel ? sel.displayName : t("panel.selectAgent", "Select agent…");
   }
 }
 
@@ -260,6 +267,7 @@ window.addEventListener("message", (ev: MessageEvent) => {
       // start) is just as healthy as an early one; there is no watchdog to cancel.
       listLoaded = true;
       matchers = msg.matchers;
+      strings = (msg as { strings?: Record<string, string> }).strings ?? {};
       // Compile each matcher's regex once here; provideLinks reuses them instead of recompiling
       // on every row of every render.
       compiledMatchers = matchers.map((m) => ({
@@ -870,7 +878,7 @@ function renderTabs(): void {
     <div class="tab ${s.id === activeId ? "active" : ""}" data-sid="${s.id}" title="${escapeAttr(s.command)}">
       ${s.iconUri ? `<img class="logo" src="${escapeAttr(s.iconUri)}" alt="" />` : `<span class="logo">⚡</span>`}
       <span class="tname">${escapeAttr(s.displayName)}</span>
-      <button class="tclose" data-sid="${s.id}" title="Close terminal" type="button">✕</button>
+      <button class="tclose" data-sid="${s.id}" title="${t("panel.closeTab", "Close terminal")}" type="button">✕</button>
     </div>`
     )
     .join("");

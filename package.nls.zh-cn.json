@@ -1,0 +1,17 @@
+{
+  "config.yolo.agents.markdownDescription": "在 agents.json 内置目录之上合并的用户覆盖项 / 新增项。按 `command` 匹配即可覆盖内置 agent（只有你填写的字段会替换它，包括 `skipFlag` 和 `resumeFlag`）；设 `enabled: false` 可隐藏某个内置 agent；使用 agents.json 中不存在的 `command` 则添加自定义 agent。\n\n请直接在 **VS Code 设置** 中编辑 —— 面板内没有设置界面；下次启动时生效。示例 —— 修改 Claude 的恢复参数并隐藏 Gemini：\n```json\n\"yolo.agents\": [\n  { \"command\": \"claude\", \"resumeFlag\": \"--continue\" },\n  { \"command\": \"gemini\", \"enabled\": false }\n]\n```\n\n启动参数顺序为 `baseArgs` → `skipFlag` → `resumeFlag`；`skipFlag` 仅在 YOLO（跳过权限）模式开启时追加，`resumeFlag` 仅在恢复模式开启时追加。",
+  "config.yolo.permissionRules.markdownDescription": "每个 agent 的跳过权限参数，以 `{ agentId, flag }` 列表形式配置。`agentId` 匹配 agent 的 `command` 或 `id`；YOLO 模式开启时追加该 `flag`，优先级高于 agent 自身的 `skipFlag`（`yolo.agents`）。推荐直接在 `yolo.agents` 的 agent 上设置 `skipFlag`；只有需要一份共享列表时才用这里。示例：\n```json\n\"yolo.permissionRules\": [\n  { \"agentId\": \"claude\", \"flag\": \"--dangerously-skip-permissions\" },\n  { \"agentId\": \"codex\", \"flag\": \"--full-auto\" }\n]\n```",
+  "config.yolo.skipEnabled.markdownDescription": "YOLO 模式：以跳过权限（自动批准）参数启动 agent，使其运行时不弹出权限确认。可通过面板上的 `$(zap)` 按钮切换。",
+  "config.yolo.resumeMode.markdownDescription": "恢复模式：以 `resumeFlag` 启动 agent，继续最近一次会话。可通过面板上的 `$(history)` 按钮切换。",
+  "config.yolo.suppressSkipWarning.markdownDescription": "以「跳过权限」（YOLO 模式）启动前不再弹出警告。",
+  "config.yolo.lastAgentId.markdownDescription": "内部使用：最近一次选中 / 启动的 agent `id`，便于面板下次打开时预选。自动写入 —— 通常无需手动编辑。",
+  "config.yolo.agentResumeFlags.markdownDescription": "恢复模式开启时，每个 agent 的恢复参数覆盖项，以 agent 的 `command` 或 `id` 为键。优先级高于 agents.json / `yolo.agents` 中的内置 `resumeFlag`。用于在不修改 agents.json 的情况下逐个调整恢复行为（例如选择交互式会话选择器，或直接恢复最近一次）。示例：\n```json\n\"yolo.agentResumeFlags\": {\n  \"codebuddy\": \"-r\",\n  \"claude\": \"--resume\"\n}\n```\n未在此时配置的 agent，仍使用 agents.json（或 `yolo.agents`）中的 `resumeFlag`。",
+  "config.yolo.agentBaseArgs.markdownDescription": "每个 agent 的额外启动参数，以 agent 小写 `id` 为键（也可匹配 `command`）。追加在 agent 自身 `baseArgs`（来自 `yolo.agents`）之后。推荐直接在 `yolo.agents` 的 agent 上设置 `baseArgs`；只有需要一份共享映射时才用这里。示例：\n```json\n\"yolo.agentBaseArgs\": { \"cursor-agent\": \"agent\", \"kilo\": \"run\" }\n```",
+  "config.yolo.installedCommands.markdownDescription": "内部缓存：PATH 上检测到的 AI agent 命令。自动维护 —— 请勿手动编辑。（内部）",
+  "config.yolo.shell.markdownDescription": "覆盖用于启动 agent 和探测 PATH 的 shell。可填绝对路径或 PATH 上的可执行文件名。在 Windows 上留空会在需要时自动检测 POSIX shell（Git Bash / WSL），否则使用 `cmd.exe`。",
+  "config.yolo.shellArgs.markdownDescription": "在 agent 命令之前传给 shell 的额外参数（例如 `[\"-l\"]`）。Windows 的 `cmd.exe` 会忽略此项。",
+  "command.openPanel.title": "Agent YOLO：打开 Agent 面板",
+  "command.openManager.title": "Agent YOLO：管理 Agent",
+  "viewsContainers.yolo-agents.title": "Agent YOLO",
+  "views.yolo.panel.name": "AI Agents"
+}

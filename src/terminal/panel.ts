@@ -20,6 +20,7 @@ import {
 import type { LinkPayload } from "../links/linkParser";
 import { renderPanelHtml, webviewAssetUri } from "./panelHtml";
 import { Regexes } from "../constants/regexes";
+import { stringsForWebview, t } from "../l10n";
 
 interface AgentOption {
   id: string;
@@ -239,6 +240,7 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
       skipIcons: this.skipIconUris(),
       resumeIcons: this.resumeIconUris(),
       cwd: defaultCwd(),
+      strings: stringsForWebview(),
     });
   }
 
@@ -286,7 +288,7 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
         void this.confirmAndClose(msg.sessionId);
         break;
       case "launch":
-        this.launch(msg);
+        void this.launch(msg);
         break;
       case "setSkip":
         settings.setSkipEnabled(Boolean(msg.skip));
@@ -320,7 +322,7 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
     this.view?.webview.postMessage({ type: "hoverResult", reqId: msg.reqId, text });
   }
 
-  private launch(msg: { agentId: string; skip: boolean; resume?: boolean; baseArgs?: string; cols?: number; rows?: number }): void {
+  private async launch(msg: { agentId: string; skip: boolean; resume?: boolean; baseArgs?: string; cols?: number; rows?: number }): Promise<void> {
     // NOTE: deliberately no teardown of any existing session — every Launch opens a NEW tab, so
     // several agents can run side by side (IDEA's addTerminalSession). The old single-session code
     // killed the running PTY here.
@@ -329,8 +331,21 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     if (!canExecute(def.command)) {
-      vscode.window.showErrorMessage(`YOLO: '${def.command}' is not installed / not on PATH.`);
+      vscode.window.showErrorMessage(t("panel.notInstalled", def.command));
       return;
+    }
+
+    // Launching with skip-permissions means the agent runs commands and edits files without
+    // confirmation, so confirm once per session unless the user opted out.
+    if (msg.skip && !settings.getSuppressSkipWarning()) {
+      const answer = await vscode.window.showWarningMessage(
+        t("warning.skip.body"),
+        { modal: true },
+        t("button.launchAnyway")
+      );
+      if (answer !== t("button.launchAnyway")) {
+        return;
+      }
     }
 
     // Remember this agent so the panel pre-selects it next time.
@@ -418,16 +433,16 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
     }
     session.closing = true;
     const answer = await vscode.window.showWarningMessage(
-      "Close this terminal? The running process will be terminated.",
+      t("panel.closeTabConfirm"),
       { modal: true },
-      "Close terminal"
+      t("panel.closeTabConfirmAction")
     );
     // Re-check: the session may have been closed while the dialog was open.
     if (!this.sessions.includes(session)) {
       return;
     }
     session.closing = false;
-    if (answer !== "Close terminal") {
+    if (answer !== t("panel.closeTabConfirmAction")) {
       return;
     }
     this.closeSession(id);
@@ -470,7 +485,7 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
           if (sym) {
             await openSymbol(sym);
           } else {
-            vscode.window.showInformationMessage(`YOLO: no symbol found for '${payload.name}'.`);
+            vscode.window.showInformationMessage(t("panel.noSymbol", payload.name!));
           }
           break;
         }
@@ -480,14 +495,14 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
             await openSymbol(sym);
           } else {
             vscode.window.showInformationMessage(
-              `YOLO: no member '${payload.member}' found for '${payload.className}'.`
+              t("panel.noMember", payload.member!, payload.className!)
             );
           }
           break;
         }
       }
     } catch (e) {
-      vscode.window.showErrorMessage(`YOLO navigation failed: ${String(e)}`);
+      vscode.window.showErrorMessage(t("panel.navigationFailed", String(e)));
     }
   }
 

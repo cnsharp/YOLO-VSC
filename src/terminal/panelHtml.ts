@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { t } from "../l10n";
 
 /** Render the YOLO panel HTML. References the esbuild-bundled webview script + css from media/dist. */
 export function renderPanelHtml(
@@ -87,21 +88,21 @@ export function renderPanelHtml(
       <button id="agentBtn" class="agent-btn" type="button">Select agent…</button>
       <div id="agentMenu" class="agent-menu" hidden></div>
     </div>
-    <button id="skipToggle" class="yolo-toggle" type="button" aria-pressed="false" title="Skip permissions (YOLO)"></button>
-    <button id="resumeToggle" class="yolo-toggle" type="button" aria-pressed="false" title="Resume last session"></button>
-    <button id="launch">Launch</button>
-    <button id="manage" type="button" title="Manage agents (install / upgrade)" aria-label="Manage agents">⧉</button>
-    <button id="settings" type="button" title="Open YOLO settings" aria-label="Open YOLO settings">⚙</button>
+    <button id="skipToggle" class="yolo-toggle" type="button" aria-pressed="false" title="${t("panel.skipTooltip")}"></button>
+    <button id="resumeToggle" class="yolo-toggle" type="button" aria-pressed="false" title="${t("panel.resumeTooltip")}"></button>
+    <button id="launch">${t("panel.launch")}</button>
+    <button id="manage" type="button" title="${t("panel.manageTooltip")}" aria-label="${t("panel.manageTooltip")}">⧉</button>
+    <button id="settings" type="button" title="${t("panel.settingsTooltip")}" aria-label="${t("panel.settingsTooltip")}">⚙</button>
   </div>
   <div id="tabbar" hidden>
     <div id="tabs"></div>
     <div class="tab-pick">
-      <button id="tabChevron" type="button" title="Switch terminal" hidden>&#9662;</button>
+      <button id="tabChevron" type="button" title="${t("panel.tabDropdown")}" hidden>&#9662;</button>
       <div id="tabMenu" class="agent-menu" hidden></div>
     </div>
   </div>
   <div id="content">
-    <div id="empty">Select an agent above, then click Launch to start its terminal.</div>
+    <div id="empty">${t("panel.emptyHint")}</div>
   </div>
   <script src="${scriptUri}"></script>
 </body>

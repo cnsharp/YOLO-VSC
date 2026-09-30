@@ -4,7 +4,7 @@
 // through agentInstaller, and every change is pushed to the webview as a message.
 
 import * as vscode from "vscode";
-import { resolveAgents, installAutomatableOnPlatform, type AgentDef } from "../agents";
+import { resolveAgents, installAutomatableOnPlatform, installTarget, type AgentDef } from "../agents";
 import { canExecute, invalidateExecutableCache } from "../agentDetector";
 import * as settings from "../settings/settings";
 import { agentIconUri } from "./icons";
@@ -17,6 +17,7 @@ import {
   runHeadless,
 } from "./agentInstaller";
 import * as agentVersion from "./agentVersion";
+import { stringsForWebview, t } from "../l10n";
 
 /** Everything the webview needs to render one card. */
 interface AgentCard {
@@ -52,7 +53,7 @@ export class AgentManagerPanel {
     this.extensionUri = extensionUri;
     this.panel = vscode.window.createWebviewPanel(
       AgentManagerPanel.viewType,
-      "Agent YOLO: Manage Agents",
+      t("manage.title"),
       vscode.ViewColumn.Active,
       {
         enableScripts: true,
@@ -127,7 +128,11 @@ export class AgentManagerPanel {
   }
 
   private sendInit(): void {
-    this.panel.webview.postMessage({ type: "init", agents: this.agentCards() });
+    this.panel.webview.postMessage({
+      type: "init",
+      agents: this.agentCards(),
+      strings: stringsForWebview(),
+    });
   }
 
   /** Send every agent whose in-memory result differs from what the webview last saw. */
@@ -183,12 +188,23 @@ export class AgentManagerPanel {
     }
   }
 
+  private postResult(agentId: string, ok: boolean, message: string): void {
+    this.panel.webview.postMessage({ type: "result", agentId, ok, message });
+  }
+
   private async runCheckAll(): Promise<void> {
     if (this.checking) return;
     this.checking = true;
     this.panel.webview.postMessage({ type: "checking", checking: true });
     try {
       await agentVersion.checkAll(resolveAgents());
+      const available = Object.values(agentVersion.snapshot()).filter(
+        (i) => i.status === "UPDATE_AVAILABLE"
+      ).length;
+      this.panel.webview.postMessage({
+        type: "status",
+        message: available > 0 ? t("status.updatesAvailable", String(available)) : "",
+      });
     } finally {
       this.checking = false;
       this.panel.webview.postMessage({ type: "checking", checking: false });
@@ -201,33 +217,48 @@ export class AgentManagerPanel {
     if (!def?.install || this.busy.has(agentId)) {
       return;
     }
-    const label = upgrade ? "upgrading…" : "installing…";
+    const label = t("status.installing", def.displayName, installTarget(def.install));
     this.setBusy(agentId, label);
     try {
       const command = upgrade ? buildUpdateCommand(def.install) : buildInstallCommand(def.install);
-      if (!command) {
-        // `url` (or unknown) spec: nothing runnable — open the download page instead.
-        await openAgentUrl(def.url ?? def.install.url ?? "");
+      if (!command || !installAutomatableOnPlatform(def.install)) {
+        // `url` (or unknown / non-runnable) spec: nothing to run — open the download page instead.
+        const site = def.url ?? def.install.url ?? "";
+        if (!site) {
+          this.postResult(agentId, false, t("status.noInstallUrl", def.displayName));
+          return;
+        }
+        await openAgentUrl(site);
+        this.postResult(agentId, true, t("status.install.opened", def.displayName));
         return;
       }
       const result = await runHeadless(command);
-      if (result.ok) {
-        // Detection caches are stale the moment the installer finished — drop them, refresh the
-        // persisted installed set, and re-read the (new) version pair.
-        invalidateExecutableCache();
-        await settings.syncInstalledAgents(
-          resolveAgents().map((a) => ({ id: a.id, command: a.command })),
-          settings.getCustomTools(),
-          canExecute
-        );
-        await agentVersion.refresh(def);
+      if (!result.ok) {
+        const detail = result.error ?? lastLine(result.output) ?? "unknown error";
+        this.postResult(agentId, false, t("status.install.failed", def.displayName, detail));
+        return;
       }
-      this.panel.webview.postMessage({
-        type: "result",
-        agentId,
-        ok: result.ok,
-        message: result.ok ? successLine(def, upgrade) : result.error ?? result.output.split("\n").pop() ?? "failed",
-      });
+      // The installer exited 0, but a `curl | bash` / `npm install -g` can finish cleanly while
+      // placing the binary somewhere not yet on PATH — verify the command is actually runnable
+      // before claiming success.
+      invalidateExecutableCache();
+      await settings.syncInstalledAgents(
+        resolveAgents().map((a) => ({ id: a.id, command: a.command })),
+        settings.getCustomTools(),
+        canExecute
+      );
+      if (!canExecute(def.command)) {
+        this.postResult(
+          agentId,
+          false,
+          t("status.install.unverified", def.displayName, def.command)
+        );
+      } else {
+        this.postResult(agentId, true, t("status.installed", def.displayName));
+      }
+      // Refresh this agent's version pair so the card no longer shows a stale "Update available"
+      // (clicking Update again would otherwise be a no-op).
+      await agentVersion.refresh(def);
     } finally {
       this.setBusy(agentId, undefined);
     }
@@ -246,22 +277,24 @@ export class AgentManagerPanel {
 
 /** Human-readable install-source label for the platform chip. */
 function platformLabel(spec: AgentDef["install"]): string {
-  if (!spec) return "unknown";
+  if (!spec) return t("platform.unknown");
   switch (spec.type) {
     case "npm":
     case "pip":
-      return "All platforms";
+      return t("platform.all");
     case "brew":
-      return "macOS/Linux";
+      return t("platform.unix");
     case "shell":
-      return spec.cmdWin ? "macOS/Linux/Windows" : "macOS/Linux";
+      return spec.cmdWin ? t("platform.desktop") : t("platform.unix");
     case "url":
-      return "Web";
+      return t("platform.web");
     default:
-      return "unknown";
+      return t("platform.unknown");
   }
 }
 
-function successLine(def: AgentDef, upgrade: boolean): string {
-  return `${def.displayName} ${upgrade ? "upgraded" : "installed"}.`;
+/** Last non-empty line of a command's output — the readable tail of a failed installer. */
+function lastLine(output: string): string {
+  const lines = (output ?? "").split("\n").map((l) => l.trim()).filter(Boolean);
+  return lines.length > 0 ? lines[lines.length - 1] : "";
 }

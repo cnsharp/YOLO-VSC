@@ -46,6 +46,15 @@ export function getResumeMode(): boolean {
   return cfg().get<boolean>("resumeMode", false);
 }
 
+/** Whether the skip-permissions launch warning has been suppressed by the user. */
+export function getSuppressSkipWarning(): boolean {
+  return cfg().get<boolean>("suppressSkipWarning", false);
+}
+
+export function setSuppressSkipWarning(value: boolean): void {
+  cfg().update("suppressSkipWarning", value, vscode.ConfigurationTarget.Global);
+}
+
 /**
  * Per-agent override of the resume flag (the flag appended when Resume mode is on). Keyed by agent
  * `command` or `id`. Takes precedence over the built-in value in agents.json / `yolo.agents`, so a

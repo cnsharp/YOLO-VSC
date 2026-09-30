@@ -69,6 +69,21 @@ export function hasUpdateCommand(spec?: InstallSpec): boolean {
   return installAutomatable(spec) || !!spec?.updateCmd;
 }
 
+/** Human-readable install target shown in the status line, e.g. the package or command. */
+export function installTarget(spec?: InstallSpec): string {
+  if (!spec) return "";
+  switch (spec.type) {
+    case "npm":
+    case "pip":
+    case "brew":
+      return spec.pkg ?? "";
+    case "shell":
+      return process.platform === "win32" && spec.cmdWin ? spec.cmdWin : (spec.cmd ?? "");
+    default:
+      return spec.url ?? "";
+  }
+}
+
 /**
  * Shape of an entry in `agents.json` (the built-in catalog) and in the
  * `${CONFIG_SECTION}.agents` setting (user overrides / additions). Only

@@ -19,15 +19,25 @@ interface AgentCard {
   canInstall: boolean;
   canUpgrade: boolean;
   busy?: string;
+  /** Last install/upgrade outcome shown under the version rows. */
+  result?: { ok: boolean; message: string };
 }
 
 let cards: AgentCard[] = [];
 let checking = false;
+let statusLine = "";
+/** Localized strings pushed by the host with `init` (the webview has no access to vscode.l10n);
+ *  until then `t()` falls back to the English text below. */
+let strings: Record<string, string> = {};
+function t(key: string, fallback: string): string {
+  return strings[key] ?? fallback;
+}
 
 const grid = document.getElementById("grid") as HTMLDivElement;
 const empty = document.getElementById("empty") as HTMLDivElement;
 const refreshBtn = document.getElementById("refresh") as HTMLButtonElement;
 const upgradeAllBtn = document.getElementById("upgradeAll") as HTMLButtonElement;
+const statusEl = document.getElementById("statusline") as HTMLSpanElement;
 
 refreshBtn.addEventListener("click", () => vscode.postMessage({ type: "refresh" }));
 upgradeAllBtn.addEventListener("click", () => vscode.postMessage({ type: "upgradeAll" }));
@@ -37,6 +47,7 @@ window.addEventListener("message", (e: MessageEvent) => {
   switch (msg.type) {
     case "init":
       cards = msg.agents ?? [];
+      strings = msg.strings ?? {};
       render();
       break;
     case "agentUpdate": {
@@ -64,6 +75,18 @@ window.addEventListener("message", (e: MessageEvent) => {
       refreshBtn.disabled = checking;
       render();
       break;
+    case "result": {
+      const c = cards.find((x) => x.id === msg.agentId);
+      if (c) {
+        c.result = { ok: !!msg.ok, message: String(msg.message ?? "") };
+        render();
+      }
+      break;
+    }
+    case "status":
+      statusLine = String(msg.message ?? "");
+      render();
+      break;
   }
 });
 
@@ -72,7 +95,11 @@ function upgradableCount(): number {
 }
 
 function render(): void {
-  upgradeAllBtn.textContent = upgradableCount() > 0 ? `Upgrade All (${upgradableCount()})` : "Upgrade All";
+  statusEl.textContent = statusLine;
+  upgradeAllBtn.textContent =
+    upgradableCount() > 0
+      ? t("manage.updateAllCount", "Update All ({0})").replace("{0}", String(upgradableCount()))
+      : t("manage.updateAll", "Update All");
   upgradeAllBtn.disabled = checking || upgradableCount() === 0;
   empty.hidden = cards.length > 0;
   grid.replaceChildren(...cards.map(cardEl));
@@ -106,7 +133,7 @@ function cardEl(c: AgentCard): HTMLElement {
   if (c.status === "UPDATE_AVAILABLE") {
     const badge = document.createElement("span");
     badge.className = "badge";
-    badge.textContent = "upgradable";
+    badge.textContent = t("manage.updateAvailable", "Update available");
     head.append(badge);
   } else if (c.status === "ERROR" || (!c.installed && c.status !== "CHECKING")) {
     const warn = document.createElement("span");
@@ -119,14 +146,21 @@ function cardEl(c: AgentCard): HTMLElement {
   const rows = document.createElement("div");
   rows.className = "rows";
   rows.append(
-    versionRow("Current version", c),
-    versionRow("Latest version", c, true)
+    versionRow(t("manage.currentVersion", "Current version"), c),
+    versionRow(t("manage.latestVersion", "Latest version"), c, true)
   );
   if (c.error) {
     const err = document.createElement("div");
     err.className = "error";
     err.textContent = c.error;
     rows.append(err);
+  }
+
+  if (c.result) {
+    const res = document.createElement("div");
+    res.className = c.result.ok ? "ok" : "error";
+    res.textContent = c.result.message;
+    rows.append(res);
   }
 
   // --- action buttons ---
@@ -141,16 +175,16 @@ function cardEl(c: AgentCard): HTMLElement {
     actions.append(b);
   } else {
     if (c.status === "UPDATE_AVAILABLE" && c.canUpgrade) {
-      actions.append(actionBtn("Upgrade", true, () => vscode.postMessage({ type: "upgrade", agentId: c.id })));
+      actions.append(actionBtn(t("manage.update", "Update"), true, () => vscode.postMessage({ type: "upgrade", agentId: c.id })));
     } else if (!c.installed && c.canInstall) {
-      actions.append(actionBtn("Install", false, () => vscode.postMessage({ type: "install", agentId: c.id })));
+      actions.append(actionBtn(t("manage.install", "Install"), false, () => vscode.postMessage({ type: "install", agentId: c.id })));
     } else if (c.installed && c.canUpgrade && c.status !== "CHECKING" && c.status !== "UP_TO_DATE") {
       // Installed but the version pair couldn't be compared (MANUAL / ERROR): offer the
       // agent's own update command anyway.
-      actions.append(actionBtn("Upgrade", false, () => vscode.postMessage({ type: "upgrade", agentId: c.id })));
+      actions.append(actionBtn(t("manage.update", "Update"), false, () => vscode.postMessage({ type: "upgrade", agentId: c.id })));
     }
     if (c.url) {
-      actions.append(actionBtn("Open site", false, () => vscode.postMessage({ type: "openUrl", url: c.url })));
+      actions.append(actionBtn(t("manage.openSite", "Open site"), false, () => vscode.postMessage({ type: "openUrl", url: c.url })));
     }
   }
 
@@ -168,11 +202,14 @@ function versionRow(label: string, c: AgentCard, latest = false): HTMLElement {
   v.className = "v";
   if (latest) {
     // The latest-version column is only meaningful for queryable package sources.
-    v.textContent = c.status === "CHECKING" ? "loading…" : c.latest || (c.status === "MANUAL" ? "—" : c.latest || "—");
-    if (v.textContent === "loading…") v.classList.add("loading");
+    v.textContent = c.status === "CHECKING" ? t("manage.checking", "Checking…") : c.latest || t("manage.unknown", "—");
+    if (c.status === "CHECKING") v.classList.add("loading");
   } else {
-    v.textContent = c.status === "CHECKING" && !c.current ? "loading…" : c.current || (c.installed ? "unknown" : "not installed");
-    if (v.textContent === "loading…") v.classList.add("loading");
+    v.textContent =
+      c.status === "CHECKING" && !c.current
+        ? t("manage.checking", "Checking…")
+        : c.current || (c.installed ? t("manage.unknown", "—") : t("manage.notInstalled", "not installed"));
+    if (v.textContent === t("manage.checking", "Checking…")) v.classList.add("loading");
   }
   row.append(k, v);
   return row;
