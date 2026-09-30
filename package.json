@@ -21,7 +21,8 @@
   },
   "activationEvents": [
     "onView:yolo.panel",
-    "onCommand:yolo.openPanel"
+    "onCommand:yolo.openPanel",
+    "onCommand:yolo.openManager"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -214,6 +215,12 @@
         "title": "Agent YOLO: Open Agents Panel",
         "category": "Agent YOLO",
         "icon": "$(y)"
+      },
+      {
+        "command": "yolo.openManager",
+        "title": "Agent YOLO: Manage Agents",
+        "category": "Agent YOLO",
+        "icon": "$(gear)"
       }
     ],
     "viewsContainers": {
@@ -243,7 +250,7 @@
     "build": "npm run compile && npm run build:webview",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "build:webview": "esbuild src/webview/panel.ts --bundle --outdir=media/dist --loader:.css=css --sourcemap",
+    "build:webview": "esbuild src/webview/panel.ts src/webview/manage.ts --bundle --outdir=media/dist --loader:.css=css --sourcemap",
     "watch:webview": "npm run build:webview -- --watch",
     "test": "node --test"
   },

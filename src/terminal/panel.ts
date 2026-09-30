@@ -302,6 +302,9 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
       case "openSettings":
         void vscode.commands.executeCommand("workbench.action.openSettings", "yolo");
         break;
+      case "openManager":
+        void vscode.commands.executeCommand("yolo.openManager");
+        break;
       case "navigate":
         void this.navigate(msg.payload as LinkPayload);
         break;

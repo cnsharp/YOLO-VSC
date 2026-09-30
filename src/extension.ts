@@ -3,6 +3,7 @@
 
 import * as vscode from "vscode";
 import { YoloViewProvider } from "./terminal/panel";
+import { AgentManagerPanel } from "./manage/managerPanel";
 import { initBuiltInAgents, resolveAgents } from "./agents";
 import { canExecute } from "./agentDetector";
 import * as settings from "./settings/settings";
@@ -39,6 +40,13 @@ export function activate(context: vscode.ExtensionContext): void {
   // Open Agents Panel: focus the docked view (creates it on first use).
   context.subscriptions.push(
     vscode.commands.registerCommand("yolo.openPanel", () => panel.reveal())
+  );
+
+  // Manage Agents: open the full-page manager (editor-area tab) with install/upgrade actions.
+  context.subscriptions.push(
+    vscode.commands.registerCommand("yolo.openManager", () =>
+      AgentManagerPanel.show(context.extensionUri)
+    )
   );
 }
 

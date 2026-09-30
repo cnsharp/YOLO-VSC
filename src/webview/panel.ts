@@ -358,6 +358,10 @@ document.getElementById("settings")?.addEventListener("click", () => {
   vscode.postMessage({ type: "openSettings" });
 });
 
+document.getElementById("manage")?.addEventListener("click", () => {
+  vscode.postMessage({ type: "openManager" });
+});
+
 // Tell the host we're ready to receive the agent list + matchers. The host replies with `init`,
 // but that first reply can be lost if it was sent by `resolveWebviewView` before this webview's
 // message listener attached. So we re-request until `init` actually lands — bounded and silent (no

@@ -245,3 +245,12 @@ export function canExecute(command: string): boolean {
 export function isInstalled(command: string): boolean {
   return canExecute(command);
 }
+
+/**
+ * Drop every cached resolution so the next `canExecute`/`resolvePath` re-probes the filesystem.
+ * Called right after a head-less install finishes — without this the manage page would keep
+ * reporting the freshly installed agent as "not installed" until the extension host restarted.
+ */
+export function invalidateExecutableCache(): void {
+  cache.clear();
+}

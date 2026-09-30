@@ -23,6 +23,50 @@ export interface AgentDef {
    *  end keeps its icons under a different directory. Optional — falls back to a default terminal
    *  icon. The loader maps it onto the bundled media/agents assets (svg→png fallback). */
   readonly icon?: string;
+  /** Agent home page, opened by the "Open site" action on the manage page. */
+  readonly url?: string;
+  /** How the agent is installed / upgraded — drives the manage page's Install / Upgrade buttons. */
+  readonly install?: InstallSpec;
+}
+
+/** Package manager (or bare shell / web download) an agent's `install` spec is expressed against. */
+export type InstallType = "npm" | "pip" | "brew" | "shell" | "url";
+
+/**
+ * How to install / upgrade an agent. Mirrors the `install` object in agents.json:
+ *   - `npm` / `pip` / `brew` install `pkg` through that package manager;
+ *   - `shell` runs `cmd` (or `cmdWin` on Windows) — curl|bash style installers;
+ *   - `url` cannot be automated: the UI opens the download page instead.
+ * `updateCmd`, when present, is the preferred upgrade command for any type.
+ */
+export interface InstallSpec {
+  readonly type: InstallType;
+  readonly pkg?: string;
+  readonly cmd?: string;
+  readonly cmdWin?: string;
+  readonly url?: string;
+  readonly updateCmd?: string;
+}
+
+/** Whether an install command can be built and run head-less at all (everything but `url`). */
+export function installAutomatable(spec?: InstallSpec): boolean {
+  return spec?.type === "npm" || spec?.type === "pip" || spec?.type === "brew" || spec?.type === "shell";
+}
+
+/**
+ * Whether the install can be automated ON THIS PLATFORM. Homebrew only exists on macOS/Linux
+ * (Windows has it only inside WSL), so a `brew` spec there must fall back to opening the site
+ * instead of running a `brew` command that can never succeed.
+ */
+export function installAutomatableOnPlatform(spec?: InstallSpec): boolean {
+  if (!spec) return false;
+  if (spec.type === "brew" && process.platform === "win32") return false;
+  return installAutomatable(spec);
+}
+
+/** Whether an upgrade command can be built: any package manager, or an explicit `updateCmd`. */
+export function hasUpdateCommand(spec?: InstallSpec): boolean {
+  return installAutomatable(spec) || !!spec?.updateCmd;
 }
 
 /**
@@ -41,6 +85,10 @@ export interface AgentConfig {
   iconFile?: string;
   /** Flag appended when "Resume mode" is on (e.g. `-r`, `--resume`). */
   resumeFlag?: string;
+  /** Agent home page (see `AgentDef.url`). */
+  url?: string;
+  /** Install/upgrade recipe (see `InstallSpec`). */
+  install?: InstallSpec;
   /** Set false to hide a built-in agent without deleting it. Defaults to true. */
   enabled?: boolean;
   id?: string;
@@ -141,6 +189,8 @@ function buildAgents(): { agents: AgentDef[]; warnings: string[] } {
       skipFlag: cfg.skipFlag,
       resumeFlag: cfg.resumeFlag,
       icon: cfg.icon ?? cfg.iconFile,
+      url: cfg.url,
+      install: cfg.install,
     });
   };
 
