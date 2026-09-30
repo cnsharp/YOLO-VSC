@@ -23,6 +23,8 @@ export interface UserAgentOverride {
   baseArgs?: string;
   skipFlag?: string;
   resumeFlag?: string;
+  icon?: string;
+  /** @deprecated use `icon` (filename); kept for backward-compatible user overrides that pass a full path. */
   iconFile?: string;
   /** Set false to hide this agent (or a matching built-in) from the panel. Defaults to true. */
   enabled?: boolean;

@@ -2,6 +2,7 @@
 // webview. Implements vscode.WebviewViewProvider so the panel docks in the activity bar (the IntelliJ
 // "tool window" equivalent) and persists while hidden.
 
+import * as fs from "fs";
 import * as vscode from "vscode";
 import { spawnAgent, defaultCwd, type YoloPty, type SpawnBackend, type SpawnResult } from "./terminalProvider";
 import { toSerializable } from "../links/linkPatterns";
@@ -158,16 +159,27 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
     return out;
   }
 
-  /** Resolve an agent icon to a webview URI. Built-ins carry an `iconFile` (under media/agents);
-   *  icon-less / custom agents have no logo. Returns undefined until the view is ready. */
+  /** Resolve an agent icon to a webview URI. Built-ins carry an `icon` filename (e.g.
+   *  `claude.svg`); the registry stores just the filename because each end keeps icons in a
+   *  different directory. Map it onto the bundled media/agents assets, preferring `<id>.svg` and
+   *  falling back to `<id>.png` (VSC ships PNGs only). Icon-less / custom agents have no logo.
+   *  Returns undefined until the view is ready. */
   private iconUriFor(def: AgentDef): string | undefined {
     const wv = this.view?.webview;
-    if (!wv || !def.iconFile) {
+    const icon = def.icon;
+    if (!wv || !icon) {
       return undefined;
     }
-    return wv
-      .asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", "agents", def.iconFile))
-      .toString();
+    const base = icon.split("/").pop() ?? "";
+    const name = base.replace(/\.[^.]+$/, "");
+    const dir = vscode.Uri.joinPath(this.extensionUri, "media", "agents");
+    for (const ext of ["svg", "png"]) {
+      const candidate = vscode.Uri.joinPath(dir, `${name}.${ext}`);
+      if (fs.existsSync(candidate.fsPath)) {
+        return wv.asWebviewUri(candidate).toString();
+      }
+    }
+    return undefined;
   }
 
   /** Webview URIs for the YOLO (skip-permissions) toggle, taken from the IDEA edition. Returns
