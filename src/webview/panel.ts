@@ -343,14 +343,14 @@ document.getElementById("launch")?.addEventListener("click", () => {
 document.getElementById("skipToggle")?.addEventListener("click", () => {
   skipEnabled = !skipEnabled;
   renderSkipToggle();
-  // Persist so the toggle survives panel reloads / restarts (mirrors ai-agents-vsc's yoloMode setting).
+  // Persist so the toggle survives panel reloads / restarts (mirrors ai-agents-terminal-vsc's yoloMode setting).
   vscode.postMessage({ type: "setSkip", skip: skipEnabled });
 });
 
 document.getElementById("resumeToggle")?.addEventListener("click", () => {
   resumeEnabled = !resumeEnabled;
   renderResumeToggle();
-  // Persist so the toggle survives panel reloads / restarts (mirrors ai-agents-vsc's resumeMode setting).
+  // Persist so the toggle survives panel reloads / restarts (mirrors ai-agents-terminal-vsc's resumeMode setting).
   vscode.postMessage({ type: "setResume", resume: resumeEnabled });
 });
 
