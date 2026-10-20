@@ -338,12 +338,19 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
     // Launching with skip-permissions means the agent runs commands and edits files without
     // confirmation, so confirm once per session unless the user opted out.
     if (msg.skip && !settings.getSuppressSkipWarning()) {
+      const launchAnyway = t("button.launchAnyway");
+      const dontAskAgain = t("button.dontShowAgain");
       const answer = await vscode.window.showWarningMessage(
         t("warning.skip.body"),
         { modal: true },
-        t("button.launchAnyway")
+        launchAnyway,
+        dontAskAgain
       );
-      if (answer !== t("button.launchAnyway")) {
+      if (answer === dontAskAgain) {
+        // User opted out of future warnings: persist and proceed this launch.
+        settings.setSuppressSkipWarning(true);
+      } else if (answer !== launchAnyway) {
+        // ESC / X / no choice: do not launch.
         return;
       }
     }

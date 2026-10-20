@@ -20,6 +20,7 @@
 
   "warning.skip.body": "你正在以“跳过权限”（YOLO 模式）启动 AI agent。该 agent 将在无需确认的情况下运行命令、修改文件，可能造成不可逆的更改、执行不受信任的代码或暴露你的系统。仅在可信环境中继续。",
   "button.launchAnyway": "仍然启动",
+  "button.dontShowAgain": "不再提示",
 
   "manage.title": "Agent YOLO：管理 Agent",
   "manage.heading": "Agent 环境",

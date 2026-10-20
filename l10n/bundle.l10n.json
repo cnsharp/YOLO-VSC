@@ -20,6 +20,7 @@
 
   "warning.skip.body": "You are launching an AI agent with \"Skip permissions\" (YOLO mode) enabled. The agent will run commands and edit files without your confirmation. This can make irreversible changes, execute untrusted code, or expose your system. Only continue in a trusted environment.",
   "button.launchAnyway": "Launch anyway",
+  "button.dontShowAgain": "Don't show again",
 
   "manage.title": "Agent YOLO: Manage Agents",
   "manage.heading": "Agent environment",
