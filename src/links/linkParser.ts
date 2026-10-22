@@ -38,6 +38,11 @@ interface Candidate {
 export function parseLine(text: string, matchers: MatcherDef[] = ALL_MATCHERS): ParsedLink[] {
   const candidates: Candidate[] = [];
   for (const matcher of matchers) {
+    // TUI output (Claude Code tool-call labels, box-drawing borders, …) carries Unicode symbols such as
+    // ● ∴ └ that never appear in real code output. Real type names are ASCII, so an all-ASCII line gate
+    // stops a line like "● Bash" or "∴ Thought" from being linked as a type. The path/url matchers are
+    // left untouched so legitimate non-ASCII filenames keep their links.
+    if (matcher.kind === "type" && !isAllAscii(text)) continue;
     const flags = matcher.regex.flags.includes("g")
       ? matcher.regex.flags
       : matcher.regex.flags + "g";
@@ -123,6 +128,14 @@ function num(s: string | undefined): number | undefined {
   }
   const n = parseInt(s, 10);
   return Number.isNaN(n) ? undefined : n;
+}
+
+/** True when [s] contains only ASCII characters (< 128). Used to separate real code identifiers from TUI chrome. */
+function isAllAscii(s: string): boolean {
+  for (const ch of s) {
+    if (ch.codePointAt(0)! >= 128) return false;
+  }
+  return true;
 }
 
 /** Remove keys whose value is undefined so payloads compare cleanly and serialize tightly. */

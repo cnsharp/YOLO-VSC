@@ -475,6 +475,11 @@ function buildPayload(m: SerializableMatcher, match: RegExpExecArray): LinkPaylo
 function provideLinks(lineText: string): Candidate[] {
   const candidates: Candidate[] = [];
   for (const { m, re } of compiledMatchers) {
+    // TUI output (Claude Code tool-call labels, box-drawing borders, …) carries Unicode symbols such as
+    // ● ∴ └ that never appear in real code output. Real type names are ASCII, so skip the type matcher on
+    // any line containing non-ASCII characters. This stops a line like "● Bash" or "∴ Thought" from being
+    // linked as a type, while path/url matchers stay untouched so non-ASCII filenames keep their links.
+    if (m.kind === "type" && !isAllAscii(lineText)) continue;
     re.lastIndex = 0;
     let match: RegExpExecArray | null;
     let guard = 0;
@@ -507,6 +512,14 @@ function provideLinks(lineText: string): Candidate[] {
     }
   }
   return accepted;
+}
+
+/** True when [s] contains only ASCII characters (< 128). Used to separate real code identifiers from TUI chrome. */
+function isAllAscii(s: string): boolean {
+  for (const ch of s) {
+    if (ch.codePointAt(0)! >= 128) return false;
+  }
+  return true;
 }
 
 // Hover preview (xterm 5.x DOM-based tooltip): one tooltip element per session, appended to that
