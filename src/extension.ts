@@ -4,13 +4,33 @@
 import * as vscode from "vscode";
 import { YoloViewProvider } from "./terminal/panel";
 import { AgentManagerPanel } from "./manage/managerPanel";
-import { initBuiltInAgents, resolveAgents } from "./agents";
+import { initBuiltInAgents, resolveAgents, getAgentConfigWarnings } from "./agents";
 import { canExecute } from "./agentDetector";
 import * as settings from "./settings/settings";
 
 export function activate(context: vscode.ExtensionContext): void {
   // Load the built-in agent catalog from agents.json (data, not code).
   initBuiltInAgents(context);
+
+  // Structural config problems (duplicate command / name / id) — logged to the
+  // console only (no popup), matching ai-agents-terminal-vsc. Surfaced at startup
+  // and whenever the agent config changes.
+  const warnAgentConfig = () => {
+    const warnings = getAgentConfigWarnings();
+    if (warnings.length > 0) {
+      console.warn(`[YOLO] ${warnings.join(" ")}`);
+    }
+  };
+  warnAgentConfig();
+
+  // Re-surface config warnings when the agent config changes.
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration("yolo") || e.affectsConfiguration("yolo.agents")) {
+        warnAgentConfig();
+      }
+    })
+  );
 
   const panel = new YoloViewProvider(context.extensionUri);
   context.subscriptions.push(
