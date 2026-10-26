@@ -35,14 +35,9 @@
   "manage.unknown": "—",
   "manage.install": "安装",
   "manage.update": "更新",
-  "manage.openSite": "打开官网",
+  "manage.openSite": "网站",
   "manage.updateAvailable": "可更新",
 
-  "platform.all": "全平台",
-  "platform.unix": "macOS/Linux",
-  "platform.desktop": "macOS/Linux/Windows",
-  "platform.web": "网页",
-  "platform.unknown": "未知",
 
   "status.installing": "正在安装 {0}（{1}）…",
   "status.installed": "{0} 已安装",

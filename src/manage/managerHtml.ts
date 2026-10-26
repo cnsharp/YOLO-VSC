@@ -30,7 +30,6 @@ export function renderManagerHtml(cspSource: string, scriptUri: vscode.Uri): str
     .card .logo.fallback { display: inline-flex; align-items: center; justify-content: center; font-size: 18px; opacity: 0.7; }
     .card .names { flex: 1 1 auto; min-width: 0; }
     .card .name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .card .chip { display: inline-block; margin-top: 3px; padding: 1px 7px; font-size: 10px; border-radius: 8px; background: var(--vscode-badge-background, #4d4d4d); color: var(--vscode-badge-foreground, #ffffff); }
     .card .badge { flex: 0 0 auto; padding: 2px 8px; font-size: 11px; border-radius: 9px; background: var(--vscode-button-background, #0e639c); color: var(--vscode-button-foreground, #ffffff); }
     .card .warn { flex: 0 0 auto; color: var(--vscode-editorWarning-foreground, #cca700); font-size: 14px; }
     .card .rows { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }

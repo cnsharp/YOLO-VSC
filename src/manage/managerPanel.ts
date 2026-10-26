@@ -25,7 +25,6 @@ interface AgentCard {
   displayName: string;
   command: string;
   iconUri?: string;
-  platforms: string;
   installed: boolean;
   url?: string;
   status: string;
@@ -113,7 +112,6 @@ export class AgentManagerPanel {
         displayName: def.displayName,
         command: def.command,
         iconUri: agentIconUri(this.panel.webview, this.extensionUri, def.icon),
-        platforms: platformLabel(spec),
         installed: canExecute(def.command),
         url: def.url,
         status: info?.status ?? "NA",
@@ -275,23 +273,6 @@ export class AgentManagerPanel {
   }
 }
 
-/** Human-readable install-source label for the platform chip. */
-function platformLabel(spec: AgentDef["install"]): string {
-  if (!spec) return t("platform.unknown");
-  switch (spec.type) {
-    case "npm":
-    case "pip":
-      return t("platform.all");
-    case "brew":
-      return t("platform.unix");
-    case "shell":
-      return spec.cmdWin ? t("platform.desktop") : t("platform.unix");
-    case "url":
-      return t("platform.web");
-    default:
-      return t("platform.unknown");
-  }
-}
 
 /** Last non-empty line of a command's output — the readable tail of a failed installer. */
 function lastLine(output: string): string {

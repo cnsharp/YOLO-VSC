@@ -9,7 +9,6 @@ interface AgentCard {
   displayName: string;
   command: string;
   iconUri?: string;
-  platforms: string;
   installed: boolean;
   url?: string;
   status: string;
@@ -30,7 +29,11 @@ let statusLine = "";
  *  until then `t()` falls back to the English text below. */
 let strings: Record<string, string> = {};
 function t(key: string, fallback: string): string {
-  return strings[key] ?? fallback;
+  const v = strings[key];
+  // An i18n key must never appear as UI copy. If the host ever ships the key
+  // itself as the value (instead of resolved text), fall back to the bundled
+  // English copy rather than rendering the raw key.
+  return v && v !== key ? v : fallback;
 }
 
 const grid = document.getElementById("grid") as HTMLDivElement;
@@ -95,6 +98,8 @@ function upgradableCount(): number {
 }
 
 function render(): void {
+  // Installed agents first; stable sort keeps each group's original order.
+  cards.sort((a, b) => Number(b.installed) - Number(a.installed));
   statusEl.textContent = statusLine;
   upgradeAllBtn.textContent =
     upgradableCount() > 0
@@ -125,21 +130,13 @@ function cardEl(c: AgentCard): HTMLElement {
   const name = document.createElement("div");
   name.className = "name";
   name.textContent = c.displayName;
-  const chip = document.createElement("span");
-  chip.className = "chip";
-  chip.textContent = c.platforms;
-  names.append(name, chip);
+  names.append(name);
   head.append(logo, names);
   if (c.status === "UPDATE_AVAILABLE") {
     const badge = document.createElement("span");
     badge.className = "badge";
     badge.textContent = t("manage.updateAvailable", "Update available");
     head.append(badge);
-  } else if (c.status === "ERROR" || (!c.installed && c.status !== "CHECKING")) {
-    const warn = document.createElement("span");
-    warn.className = "warn";
-    warn.textContent = "⚠";
-    head.append(warn);
   }
 
   // --- version rows ---
@@ -184,7 +181,7 @@ function cardEl(c: AgentCard): HTMLElement {
       actions.append(actionBtn(t("manage.update", "Update"), false, () => vscode.postMessage({ type: "upgrade", agentId: c.id })));
     }
     if (c.url) {
-      actions.append(actionBtn(t("manage.openSite", "Open site"), false, () => vscode.postMessage({ type: "openUrl", url: c.url })));
+      actions.append(actionBtn(t("manage.openSite", "Website"), false, () => vscode.postMessage({ type: "openUrl", url: c.url })));
     }
   }
 

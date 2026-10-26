@@ -35,14 +35,9 @@
   "manage.unknown": "—",
   "manage.install": "Install",
   "manage.update": "Update",
-  "manage.openSite": "Open site",
+  "manage.openSite": "Website",
   "manage.updateAvailable": "Update available",
 
-  "platform.all": "All platforms",
-  "platform.unix": "macOS/Linux",
-  "platform.desktop": "macOS/Linux/Windows",
-  "platform.web": "Web",
-  "platform.unknown": "unknown",
 
   "status.installing": "Installing {0} ({1})…",
   "status.installed": "{0} installed",

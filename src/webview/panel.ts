@@ -116,7 +116,11 @@ let selectedAgentId = "";
  *  Until `init` lands, `t()` falls back to the key's English text in the bundle. */
 let strings: Record<string, string> = {};
 function t(key: string, fallback: string): string {
-  return strings[key] ?? fallback;
+  const v = strings[key];
+  // An i18n key must never appear as UI copy. If the host ever ships the key
+  // itself as the value (instead of resolved text), fall back to the bundled
+  // English copy rather than rendering the raw key.
+  return v && v !== key ? v : fallback;
 }
 
 // Whether the host has delivered `init` yet. Until it does we render a "Loading agents…"

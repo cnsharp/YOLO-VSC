@@ -89,7 +89,11 @@ const WEBVIEW_KEYS = [
 export function stringsForWebview(): Record<string, string> {
   const out: Record<string, string> = {};
   for (const k of WEBVIEW_KEYS) {
-    out[k] = vscode.l10n.t(k);
+    // Use the `t()` helper (with the on-disk fallback chain) rather than
+    // `vscode.l10n.t` directly: when the extension runs unpackaged (dev/F5),
+    // `vscode.l10n.t` returns the key unchanged, which would ship raw keys to
+    // the webview and override its English fallback.
+    out[k] = t(k);
   }
   return out;
 }
