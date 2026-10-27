@@ -3,16 +3,18 @@
 // Strategy: the *installed* version is read from the agent's own binary via
 // `<command> --version`, while the *latest* version is queried from the agent's package source
 // (`npm view` / `pip index versions` / `brew info`) and the two are compared as semver.
-// `shell` / `url` agents (and `brew` on native Windows, where Homebrew doesn't exist) have no
+// `shell` / `url` agents without a `latest` source (and `brew` on native Windows) have no
 // queryable package source, so they are reported as MANUAL and the UI's update action opens
-// the agent's site instead.
+// the agent's site instead. Agents that declare a `latest` source (npm / github / pypi / web) in
+// agents.json are queried over HTTP from that source instead.
 //
 // Results live in a transient in-memory cache keyed by lower-cased command; listeners are
 // notified after each state change so a page can re-render incrementally. The cache is not
 // persisted. Checks never block the caller.
 
 import type { AgentDef, InstallSpec } from "../agents";
-import { installAutomatableOnPlatform } from "../agents";
+import { installAutomatableOnPlatform, hasLatestSource } from "../agents";
+import { getLatestVersions, recordLatestVersions } from "../settings/settings";
 import { canExecute } from "../agentDetector";
 import { runHeadless } from "./agentInstaller";
 
@@ -43,6 +45,26 @@ const CONCURRENCY = 5;
 const results = new Map<string, UpdateInfo>();
 const listeners = new Set<() => void>();
 let checking = false;
+
+/** Detections collected during a scan, flushed to settings.json once at the end (one write
+ * per scan/refresh, not one per agent). Cleared after each flush. */
+const dirtyLatest: Record<string, string> = {};
+
+function markLatest(command: string, version: string): void {
+  if (version) dirtyLatest[command.trim().toLowerCase()] = version;
+}
+
+function flushLatest(): void {
+  if (Object.keys(dirtyLatest).length) recordLatestVersions(dirtyLatest);
+  for (const k of Object.keys(dirtyLatest)) delete dirtyLatest[k];
+}
+
+/** Seed the in-memory cache with last-known latest versions so the panel shows them
+ * immediately (cache-first) before the next network probe lands. Live checks overwrite
+ * these entries; the seeded status is NA (re-resolved on the next scan). */
+for (const [cmd, ver] of Object.entries(getLatestVersions())) {
+  if (ver) results.set(cmd, { status: "NA", current: "", latest: ver });
+}
 
 function keyOf(command: string): string {
   return (command ?? "").trim().toLowerCase();
@@ -95,7 +117,7 @@ export async function checkAll(agents: AgentDef[]): Promise<void> {
   if (checking) return;
   checking = true;
   try {
-    const targets = agents.filter((a) => a.install && installAutomatableOnPlatform(a.install));
+    const targets = agents.filter((a) => a.install && (installAutomatableOnPlatform(a.install) || hasLatestSource(a.install)));
     for (const a of targets) {
       put(keyOf(a.command), { status: "CHECKING", current: "", latest: "" });
     }
@@ -105,6 +127,7 @@ export async function checkAll(agents: AgentDef[]): Promise<void> {
     }
   } finally {
     checking = false;
+    flushLatest();
     publish();
   }
 }
@@ -113,6 +136,7 @@ export async function checkAll(agents: AgentDef[]): Promise<void> {
 export async function refresh(agent: AgentDef): Promise<UpdateInfo> {
   const info = await probeAgent(agent);
   put(keyOf(agent.command), info);
+  if (info.latest) markLatest(agent.command, info.latest);
   return info;
 }
 
@@ -125,6 +149,8 @@ async function checkAgent(agent: AgentDef): Promise<UpdateInfo> {
   }
   const info = await probeAgent(agent);
   put(keyOf(agent.command), info);
+  if (info.latest) markLatest(agent.command, info.latest);
+  flushLatest();
   return info;
 }
 
@@ -159,7 +185,7 @@ async function probeAgent(agent: AgentDef): Promise<UpdateInfo> {
 /** Whether this spec's latest version can be queried on the current platform. */
 function canQueryVersion(spec: InstallSpec): boolean {
   return (
-    installAutomatableOnPlatform(spec) && (spec.type === "npm" || spec.type === "pip" || spec.type === "brew")
+    installAutomatableOnPlatform(spec) && (spec.type === "npm" || spec.type === "pip" || spec.type === "brew") || hasLatestSource(spec)
   );
 }
 
@@ -186,6 +212,11 @@ async function readCurrentVersion(
 
 /** Latest published version for a package-manager spec. Empty if it cannot be determined. */
 async function latestVersion(spec: InstallSpec): Promise<string> {
+  if (spec.latest?.npm) return npmLatestFromApi(spec.latest.npm);
+  if (spec.latest?.github) return githubLatest(spec.latest.github);
+  if (spec.latest?.pypi) return pypiLatest(spec.latest.pypi);
+  if (spec.latest?.brew) return brewLatestFromApi(spec.latest.brew);
+  if (spec.latest?.web) return webLatest(spec.latest.web);
   switch (spec.type) {
     case "npm":
       return npmLatest(spec);
@@ -305,3 +336,90 @@ function escapeRegex(s: string): string {
 // Re-exported so the panel can decide Install vs Upgrade vs site-open without importing the
 // raw predicate helpers from two modules.
 export { canQueryVersion };
+
+/** Fetch JSON with a bounded timeout. Returns null on any failure so the caller can show
+ *  "—" instead of hanging the card on a blocked/slow registry (mirrors cc-switch's
+ *  LATEST_PROBE_TIMEOUT; the global proxy client's 600s timeout is not used here). */
+async function fetchJson(url: string, headers: Record<string, string>): Promise<unknown | null> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), PROBE_TIMEOUT_MS);
+  try {
+    const r = await fetch(url, {
+      signal: ctrl.signal,
+      headers: { "User-Agent": "agentyolo", ...headers },
+    });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Latest version from the npm dist-tags endpoint (small payload, unlike the full packument). */
+async function npmLatestFromApi(pkg: string): Promise<string> {
+  const url = `https://registry.npmjs.org/-/package/${pkg.replace("/", "%2f")}/dist-tags`;
+  const json = (await fetchJson(url, {})) as { latest?: string } | null;
+  return json?.latest ?? "";
+}
+
+/** Latest version from a GitHub repo's latest release (release name's semver preferred over tag_name). */
+async function githubLatest(repo: string): Promise<string> {
+  const url = `https://api.github.com/repos/${repo}/releases/latest`;
+  const json = (await fetchJson(url, { Accept: "application/vnd.github+json" })) as {
+    name?: string;
+    tag_name?: string;
+  } | null;
+  if (!json) return "";
+  for (const raw of [json.name, json.tag_name]) {
+    if (!raw) continue;
+    const v = semverOf(raw.replace(/^v/, ""));
+    if (v && v[0] < 1000) return v.join("."); // reject calendar-style tags (e.g. v2026.8.31)
+  }
+  return "";
+}
+
+/** Latest version from PyPI's JSON API. */
+async function pypiLatest(pkg: string): Promise<string> {
+  const url = `https://pypi.org/pypi/${pkg}/json`;
+  const json = (await fetchJson(url, {})) as { info?: { version?: string } } | null;
+  return json?.info?.version ?? "";
+}
+
+/** Latest version from the Homebrew formula API (no auth, unlike the GitHub API rate limit). */
+async function brewLatestFromApi(formula: string): Promise<string> {
+  const url = `https://formulae.brew.sh/api/formula/${formula}.json`;
+  const json = (await fetchJson(url, {})) as { versions?: { stable?: string } } | null;
+  return json?.versions?.stable ?? "";
+}
+
+async function fetchText(url: string): Promise<string | null> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), PROBE_TIMEOUT_MS);
+  try {
+    const r = await fetch(url, { signal: ctrl.signal, headers: { "User-Agent": "agentyolo" } });
+    if (!r.ok) return null;
+    return await r.text();
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Latest version scraped from a web page that has no structured API. Applies `pattern` and
+ *  returns the first capture group (or the whole match). Used for date-versioned tools like
+ *  Cursor whose install page is server-rendered with the current version. */
+async function webLatest(src: { url: string; pattern: string }): Promise<string> {
+  const html = await fetchText(src.url);
+  if (!html) return "";
+  try {
+    const m = new RegExp(src.pattern, "m").exec(html);
+    if (m) return m[1] ?? m[0];
+  } catch {
+    /* invalid pattern in agents.json */
+  }
+  return "";
+}
+

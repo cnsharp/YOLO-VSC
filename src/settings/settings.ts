@@ -171,3 +171,44 @@ export async function syncInstalledAgents(
   ]);
   setInstalledCommands(Array.from(installed));
 }
+
+/**
+ * Last-known "latest version" for each agent command, persisted across sessions so the
+ * manager panel can show the most recent detected version immediately (cache-first) before
+ * the next network probe finishes. Keyed by lower-cased command. Only successful, non-empty
+ * detections are written, so a transient probe failure never overwrites a good last-known value.
+ */
+let latestVersionsCache: Record<string, string> | null = null;
+
+export function getLatestVersions(): Record<string, string> {
+  if (latestVersionsCache) {
+    return latestVersionsCache;
+  }
+  latestVersionsCache = cfg().get<Record<string, string>>("latestVersions", {});
+  return latestVersionsCache;
+}
+
+export function getLatestVersion(command: string): string | undefined {
+  return getLatestVersions()[command.trim().toLowerCase()];
+}
+
+/**
+ * Merge the given command->version pairs into the persisted map. Existing entries are kept
+ * when the new value is empty (so a failed probe never clobbers a known version). One batched
+ * settings.json write per call.
+ */
+export function recordLatestVersions(updates: Record<string, string>): void {
+  const merged = { ...getLatestVersions() };
+  for (const [cmd, ver] of Object.entries(updates)) {
+    if (!ver) continue; // never clobber a good last-known value with an empty detection
+    merged[cmd.trim().toLowerCase()] = ver;
+  }
+  latestVersionsCache = merged;
+  cfg().update("latestVersions", merged, vscode.ConfigurationTarget.Global);
+}
+
+/** Record a single agent's latest version (no-op when empty). */
+export function recordLatestVersion(command: string, version: string): void {
+  if (!version) return;
+  recordLatestVersions({ [command]: version });
+}

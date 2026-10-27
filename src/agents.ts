@@ -46,6 +46,8 @@ export interface InstallSpec {
   readonly cmdWin?: string;
   readonly url?: string;
   readonly updateCmd?: string;
+  /** Structured source for the "latest version" query for shell/url installers (npm/github/pypi). */
+  readonly latest?: { npm?: string; github?: string; pypi?: string; brew?: string; web?: { url: string; pattern: string } };
 }
 
 /** Whether an install command can be built and run head-less at all (everything but `url`). */
@@ -237,4 +239,9 @@ function buildAgents(): { agents: AgentDef[]; warnings: string[] } {
   }
 
   return { agents, warnings };
+}
+
+/** Whether the spec declares a structured "latest version" source (npm/github/pypi). */
+export function hasLatestSource(spec?: InstallSpec): boolean {
+  return !!(spec?.latest && (spec.latest.npm || spec.latest.github || spec.latest.pypi || spec.latest.brew || spec.latest.web));
 }
