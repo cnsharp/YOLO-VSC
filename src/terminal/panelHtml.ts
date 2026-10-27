@@ -91,7 +91,7 @@ export function renderPanelHtml(
     <button id="skipToggle" class="yolo-toggle" type="button" aria-pressed="false" title="${t("panel.skipTooltip")}"></button>
     <button id="resumeToggle" class="yolo-toggle" type="button" aria-pressed="false" title="${t("panel.resumeTooltip")}"></button>
     <button id="launch">${t("panel.launch")}</button>
-    <button id="manage" type="button" title="${t("panel.manageTooltip")}" aria-label="${t("panel.manageTooltip")}">⧉</button>
+    <button id="manage" type="button" title="${t("panel.manageTooltip")}" aria-label="${t("panel.manageTooltip")}">🤖</button>
     <button id="settings" type="button" title="${t("panel.settingsTooltip")}" aria-label="${t("panel.settingsTooltip")}">⚙</button>
   </div>
   <div id="tabbar" hidden>

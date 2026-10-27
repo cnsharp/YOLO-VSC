@@ -226,7 +226,7 @@
         "command": "yolo.openManager",
         "title": "%command.openManager.title%",
         "category": "Agent YOLO",
-        "icon": "$(gear)"
+        "icon": "$(robot)"
       }
     ],
     "viewsContainers": {
