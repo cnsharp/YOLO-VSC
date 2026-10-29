@@ -39,6 +39,8 @@ interface AgentOption {
 export interface YoloSession {
   /** Stable id ("session-1"), the VS Code equivalent of IDEA's CardLayout `cardKey`. */
   id: string;
+  /** Working directory the agent runs in — used to resolve relative file links. */
+  cwd: string;
   pty: YoloPty;
   backend: SpawnBackend;
   agentId: string;
@@ -401,6 +403,7 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
       displayName: def.displayName,
       iconUri: this.iconUriFor(def),
       command: def.command,
+      cwd: defaultCwd(),
       out: "",
     };
     this.sessions.push(session);
@@ -485,14 +488,14 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
           await openUrl(payload.url!);
           break;
         case "file":
-          await openFileAt(payload.path!, payload.line, payload.column);
+          await openFileAt(payload.path!, payload.line, payload.column, this.byId(this.selectedId)?.cwd);
           break;
         case "type": {
           const sym = await resolveType(payload.name!);
           if (sym) {
             await openSymbol(sym);
           } else {
-            vscode.window.showInformationMessage(t("panel.noSymbol", payload.name!));
+            console.warn(`[YOLO] No symbol found: ${payload.name}`);
           }
           break;
         }
@@ -501,15 +504,13 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
           if (sym) {
             await openSymbol(sym);
           } else {
-            vscode.window.showInformationMessage(
-              t("panel.noMember", payload.member!, payload.className!)
-            );
+            console.warn(`[YOLO] No member: ${payload.className}.${payload.member}`);
           }
           break;
         }
       }
     } catch (e) {
-      vscode.window.showErrorMessage(t("panel.navigationFailed", String(e)));
+      console.error("[YOLO] navigation failed:", e);
     }
   }
 

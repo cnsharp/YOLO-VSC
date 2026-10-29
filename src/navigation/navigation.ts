@@ -19,22 +19,77 @@ import type { LinkPayload } from "../links/linkParser";
  * first and then the home directory, picking the first candidate that actually exists on disk. This
  * is what makes project-relative references like `src/foo.ts:12` openable.
  */
-function resolveFilePath(rawPath: string): string {
+function safeExists(p: string): boolean {
+  try {
+    return fs.existsSync(p);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Bounded recursive search for a file whose trailing path segments equal `relPath`
+ * (e.g. "docs/csdn-api.md"). Used when an agent prints a path relative to a sub-directory
+ * of the workspace rather than the workspace root. Stops at `depthLimit` to stay cheap.
+ */
+function findBySuffix(root: string, relPath: string): string | undefined {
+  const segs = relPath.split(/[\\/]/).filter(Boolean);
+  if (segs.length === 0) {
+    return undefined;
+  }
+  const depthLimit = 8;
+  const stack: Array<{ dir: string; depth: number }> = [{ dir: root, depth: 0 }];
+  while (stack.length) {
+    const { dir, depth } = stack.pop()!;
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const e of entries) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        if (depth < depthLimit) stack.push({ dir: full, depth: depth + 1 });
+      } else if (e.isFile()) {
+        const tail = full.split(/[\\/]/).slice(-segs.length).join("/");
+        if (tail === segs.join("/")) {
+          return full;
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Resolve a link's path to an absolute filesystem path. Absolute paths pass through unchanged;
+ * relative paths (as printed by agents in a terminal) are resolved against the session's cwd first,
+ * then the workspace folder(s) and the home directory, picking the first candidate that exists on
+ * disk. If none match directly, a bounded search looks for the relative path anywhere beneath the
+ * workspace (agents often print paths relative to a project sub-directory). Final fallback:
+ * best-effort resolve against the first known base.
+ */
+function resolveFilePath(rawPath: string, cwd?: string): string {
   if (path.isAbsolute(rawPath)) {
     return rawPath;
   }
   const bases = [
+    ...(cwd ? [cwd] : []),
     ...(vscode.workspace.workspaceFolders?.map((f) => f.uri.fsPath) ?? []),
     os.homedir(),
   ];
   for (const base of bases) {
     const candidate = path.join(base, rawPath);
-    try {
-      if (fs.existsSync(candidate)) {
-        return candidate;
-      }
-    } catch {
-      // ignore unreadable candidates and keep trying other bases
+    if (safeExists(candidate)) {
+      return candidate;
+    }
+  }
+  // Not found directly under a base — try a sub-directory of any workspace folder.
+  for (const folder of vscode.workspace.workspaceFolders ?? []) {
+    const found = findBySuffix(folder.uri.fsPath, rawPath);
+    if (found) {
+      return found;
     }
   }
   // No existing match: best-effort resolve against the first known base.
@@ -45,9 +100,10 @@ function resolveFilePath(rawPath: string): string {
 export async function openFileAt(
   fsPath: string,
   line?: number,
-  column?: number
+  column?: number,
+  cwd?: string
 ): Promise<void> {
-  const uri = vscode.Uri.file(resolveFilePath(fsPath));
+  const uri = vscode.Uri.file(resolveFilePath(fsPath, cwd));
   const position = new vscode.Position(
     Math.max(0, (line ?? 1) - 1),
     Math.max(0, (column ?? 1) - 1)
