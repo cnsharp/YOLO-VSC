@@ -199,8 +199,8 @@ function versionRow(label: string, c: AgentCard, latest = false): HTMLElement {
   v.className = "v";
   if (latest) {
     // The latest-version column is only meaningful for queryable package sources.
-    v.textContent = c.status === "CHECKING" ? t("manage.checking", "Checking…") : c.latest || t("manage.unknown", "—");
-    if (c.status === "CHECKING") v.classList.add("loading");
+    v.textContent = c.latest || (c.status === "CHECKING" ? t("manage.checking", "Checking…") : t("manage.unknown", "—"));
+    if (c.status === "CHECKING" && !c.latest) v.classList.add("loading");
   } else {
     v.textContent =
       c.status === "CHECKING" && !c.current

@@ -6,6 +6,7 @@
   "panel.launch": "启动",
   "panel.settingsTooltip": "打开 YOLO 设置",
   "panel.manageTooltip": "管理 agent（安装 / 升级）",
+  "panel.manageAgentsItem": "管理 Agent…",
   "panel.tabDropdown": "切换终端",
   "panel.closeTab": "关闭终端",
   "panel.emptyHint": "在上方选择一个 Agent，然后点击 Launch 启动其终端。",

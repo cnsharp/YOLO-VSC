@@ -212,3 +212,27 @@ export function recordLatestVersion(command: string, version: string): void {
   if (!version) return;
   recordLatestVersions({ [command]: version });
 }
+
+/**
+ * Last-known *current* (installed) version for each agent command, persisted across sessions so
+ * the manager panel can show it immediately (cache-first) before the next local probe. Keyed by
+ * lower-cased command, with a timestamp (t) used for TTL eviction on the reader side. Stored as
+ * {v, t} so a stale entry (older than the reader's TTL) is ignored when seeded.
+ */
+let currentVersionsCache: Record<string, { v: string; t: number }> | null = null;
+
+export function getCurrentVersions(): Record<string, { v: string; t: number }> {
+  if (currentVersionsCache) return currentVersionsCache;
+  currentVersionsCache = cfg().get<Record<string, { v: string; t: number }>>("currentVersions", {});
+  return currentVersionsCache;
+}
+
+export function recordCurrentVersions(updates: Record<string, { v: string; t: number }>): void {
+  const merged = { ...getCurrentVersions() };
+  for (const [cmd, entry] of Object.entries(updates)) {
+    if (!entry?.v) continue; // never clobber a good last-known value with an empty detection
+    merged[cmd.trim().toLowerCase()] = { v: entry.v, t: entry.t };
+  }
+  currentVersionsCache = merged;
+  cfg().update("currentVersions", merged, vscode.ConfigurationTarget.Global);
+}

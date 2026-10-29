@@ -6,6 +6,7 @@
   "panel.launch": "Launch",
   "panel.settingsTooltip": "Open YOLO settings",
   "panel.manageTooltip": "Manage agents (install / upgrade)",
+  "panel.manageAgentsItem": "Manage Agents...",
   "panel.tabDropdown": "Switch terminal",
   "panel.closeTab": "Close terminal",
   "panel.emptyHint": "Select an agent above, then click Launch to start its terminal.",

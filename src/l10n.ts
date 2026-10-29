@@ -61,6 +61,7 @@ const WEBVIEW_KEYS = [
   "panel.launch",
   "panel.settingsTooltip",
   "panel.manageTooltip",
+  "panel.manageAgentsItem",
   "panel.tabDropdown",
   "panel.closeTab",
   "panel.emptyHint",

@@ -14,7 +14,7 @@
 
 import type { AgentDef, InstallSpec } from "../agents";
 import { installAutomatableOnPlatform, hasLatestSource } from "../agents";
-import { getLatestVersions, recordLatestVersions } from "../settings/settings";
+import { getLatestVersions, recordLatestVersions, getCurrentVersions, recordCurrentVersions } from "../settings/settings";
 import { canExecute } from "../agentDetector";
 import { runHeadless } from "./agentInstaller";
 
@@ -42,6 +42,9 @@ const PROBE_TIMEOUT_MS = 20_000;
  *  hammer package registries or spawn dozens of shells at once. */
 const CONCURRENCY = 5;
 
+/** A cached current version older than this is treated as stale and re-probed on open (24h). */
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
 const results = new Map<string, UpdateInfo>();
 const listeners = new Set<() => void>();
 let checking = false;
@@ -49,21 +52,37 @@ let checking = false;
 /** Detections collected during a scan, flushed to settings.json once at the end (one write
  * per scan/refresh, not one per agent). Cleared after each flush. */
 const dirtyLatest: Record<string, string> = {};
+/** Current (installed) versions collected during a scan, with timestamps, flushed once at the end. */
+const dirtyCurrent: Record<string, { v: string; t: number }> = {};
 
 function markLatest(command: string, version: string): void {
   if (version) dirtyLatest[command.trim().toLowerCase()] = version;
 }
 
+function markCurrent(command: string, version: string): void {
+  if (version) dirtyCurrent[command.trim().toLowerCase()] = { v: version, t: Date.now() };
+}
+
 function flushLatest(): void {
   if (Object.keys(dirtyLatest).length) recordLatestVersions(dirtyLatest);
   for (const k of Object.keys(dirtyLatest)) delete dirtyLatest[k];
+  if (Object.keys(dirtyCurrent).length) recordCurrentVersions(dirtyCurrent);
+  for (const k of Object.keys(dirtyCurrent)) delete dirtyCurrent[k];
 }
 
 /** Seed the in-memory cache with last-known latest versions so the panel shows them
  * immediately (cache-first) before the next network probe lands. Live checks overwrite
  * these entries; the seeded status is NA (re-resolved on the next scan). */
+const now = Date.now();
 for (const [cmd, ver] of Object.entries(getLatestVersions())) {
   if (ver) results.set(cmd, { status: "NA", current: "", latest: ver });
+}
+for (const [cmd, entry] of Object.entries(getCurrentVersions())) {
+  if (entry?.v && now - entry.t < CACHE_TTL_MS) {
+    const k = cmd.trim().toLowerCase();
+    const existing = results.get(k);
+    results.set(k, { status: existing?.status ?? "NA", current: entry.v, latest: existing?.latest ?? "" });
+  }
 }
 
 function keyOf(command: string): string {
@@ -119,7 +138,7 @@ export async function checkAll(agents: AgentDef[]): Promise<void> {
   try {
     const targets = agents.filter((a) => a.install && (installAutomatableOnPlatform(a.install) || hasLatestSource(a.install)));
     for (const a of targets) {
-      put(keyOf(a.command), { status: "CHECKING", current: "", latest: "" });
+      put(keyOf(a.command), { status: "CHECKING", current: results.get(keyOf(a.command))?.current ?? "", latest: results.get(keyOf(a.command))?.latest ?? "" });
     }
     // Wave-based concurrency: slice the target list, run each wave in parallel.
     for (let i = 0; i < targets.length; i += CONCURRENCY) {
@@ -150,6 +169,7 @@ async function checkAgent(agent: AgentDef): Promise<UpdateInfo> {
   const info = await probeAgent(agent);
   put(keyOf(agent.command), info);
   if (info.latest) markLatest(agent.command, info.latest);
+  if (info.current) markCurrent(agent.command, info.current);
   flushLatest();
   return info;
 }

@@ -45,6 +45,9 @@ export function renderPanelHtml(
     .agent-opt .meta { display: flex; flex-direction: column; min-width: 0; }
     .agent-opt .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .agent-empty { padding: 8px 10px; font-size: 12px; line-height: 1.4; opacity: 0.85; }
+    /* Trailing "Manage Agents" row in the agent dropdown (mirrors IDEA / VS). */
+    .agent-sep { height: 1px; margin: 4px 0; background: var(--vscode-panel-border, #333); }
+    .agent-opt.manage-opt .robot { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; }
     /* --- Multi-tab: strip on top, one absolutely-stacked terminal card below (IDEA's CardLayout) --- */
     #tabbar { flex: 0 0 auto; display: flex; align-items: stretch; gap: 4px; padding: 0 6px; background: var(--vscode-sideBar-background, #1e1e1e); border-bottom: 1px solid var(--vscode-panel-border, #333); }
     #tabs { flex: 1 1 auto; display: flex; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }

@@ -214,28 +214,42 @@ function renderAgentMenu(): void {
     menu.innerHTML = `<div class="agent-empty">${t("panel.loadingAgents", "Loading agents…")}</div>`;
     return;
   }
+  // Trailing "Manage Agents" entry (mirrors the IDEA dropdown and the VS AgentComboBox).
+  const manageLabel = t("panel.manageAgentsItem", "Manage Agents...");
+  const manageRow = `<div class="agent-sep"></div>` +
+    `<div class="agent-opt manage-opt" data-manage="1" title="${escapeAttr(manageLabel)}">` +
+      `<span class="logo robot" aria-hidden="true">🤖</span>` +
+      `<div class="meta"><div class="name">${escapeAttr(manageLabel)}</div></div>` +
+    `</div>`;
+
   // Only show agents that resolved on PATH.
   const visible = agents.filter((a) => a.resolvedPath);
+  let html: string;
   if (visible.length === 0) {
-    menu.innerHTML = `<div class="agent-empty">${t("panel.noAgents", "No agents detected on PATH.")}<br/>${t("panel.noAgentsHint", "Install one or check settings.")}</div>`;
-    const btn = document.getElementById("agentBtn") as HTMLButtonElement | null;
-    if (btn) {
-      btn.textContent = t("panel.selectAgent", "Select agent…");
-    }
-    return;
+    html = `<div class="agent-empty">${t("panel.noAgents", "No agents detected on PATH.")}<br/>${t("panel.noAgentsHint", "Install one or check settings.")}</div>`;
+  } else {
+    html = visible
+      .map((a) => {
+        const logo = a.iconUri
+          ? `<img class="logo" src="${escapeAttr(a.iconUri)}" alt="" />`
+          : `<span class="logo lightning" title="no icon set">⚡</span>`;
+        return `<div class="agent-opt ${a.id === selectedAgentId ? "active" : ""}" data-id="${a.id}" title="${escapeAttr(a.resolvedPath ?? "")}">
+          ${logo}<div class="meta"><div class="name">${escapeAttr(a.displayName)}</div></div>
+        </div>`;
+      })
+      .join("");
   }
-  menu.innerHTML = visible
-    .map((a) => {
-      const logo = a.iconUri
-        ? `<img class="logo" src="${escapeAttr(a.iconUri)}" alt="" />`
-        : `<span class="logo lightning" title="no icon set">⚡</span>`;
-      return `<div class="agent-opt ${a.id === selectedAgentId ? "active" : ""}" data-id="${a.id}" title="${escapeAttr(a.resolvedPath ?? "")}">
-        ${logo}<div class="meta"><div class="name">${escapeAttr(a.displayName)}</div></div>
-      </div>`;
-    })
-    .join("");
+  html += manageRow;
+  menu.innerHTML = html;
   menu.querySelectorAll<HTMLDivElement>(".agent-opt").forEach((el) => {
-    el.addEventListener("click", () => selectAgent(el.dataset.id!));
+    el.addEventListener("click", () => {
+      if (el.dataset.manage) {
+        menu.hidden = true;
+        vscode.postMessage({ type: "openManager" });
+        return;
+      }
+      selectAgent(el.dataset.id!);
+    });
   });
   const btn = document.getElementById("agentBtn") as HTMLButtonElement | null;
   const sel = agents.find((a) => a.id === selectedAgentId);
