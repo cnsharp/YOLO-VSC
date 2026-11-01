@@ -101,9 +101,13 @@ export function spawnAgent(opts: SpawnOptions): SpawnResult {
         },
       },
     };
-  } catch {
-    // node-pty couldn't spawn a PTY here (typically `posix_spawnp failed` because its prebuilt
-    // spawn-helper lacks the executable bit — see scripts/ensure-node-pty-exec.cjs). Delegate to
+  } catch (err) {
+    // Either `require("node-pty")` failed (e.g. its prebuilt native binaries weren't found/loadable)
+    // or `pty.spawn()` threw `posix_spawnp failed` because the prebuilt `spawn-helper` lost its
+    // executable bit during npm/tar extraction. Both are fixed at install/build time by
+    // scripts/ensure-node-pty-exec.cjs (chmod +x). Surface the real reason instead of swallowing it
+    // so the fallback is diagnosable, then delegate to
+    console.error("[yolo] embedded PTY unavailable, falling back to a VS Code terminal:", err instanceof Error ? err.message : err);
     // VS Code's own terminal, which has a working PTY, and reveal it so the user interacts there
     // directly. The login+interactive (`-lic`) path is kept so rc-defined PATH (nvm/fnm/npm global
     // bin) is honoured, exactly like the node-pty route.

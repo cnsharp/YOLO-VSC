@@ -253,7 +253,7 @@
   "scripts": {
     "vscode:prepublish": "npm run build",
     "postinstall": "node scripts/ensure-node-pty-exec.cjs",
-    "build": "npm run compile && npm run build:webview",
+    "build": "npm run compile && npm run build:webview && node scripts/ensure-node-pty-exec.cjs",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "build:webview": "esbuild src/webview/panel.ts src/webview/manage.ts --bundle --outdir=media/dist --loader:.css=css --sourcemap",
