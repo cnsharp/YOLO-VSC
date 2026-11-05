@@ -32,7 +32,10 @@ export function renderPanelHtml(
     #bar #manage { width: 28px; height: 24px; padding: 0; font-size: 13px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; margin-left: auto; }
     #bar #settings { margin-left: 0; }
     .agent-pick { position: relative; display: inline-block; }
-    .agent-btn { min-width: 140px; text-align: left; }
+    .agent-btn { min-width: 140px; text-align: left; display: inline-flex; align-items: center; gap: 6px; }
+    .agent-btn .logo { width: 16px; height: 16px; flex: 0 0 auto; object-fit: contain; border-radius: 3px; }
+    .agent-btn .logo.lightning { display: inline-flex; align-items: center; justify-content: center; font-size: 13px; line-height: 1; opacity: 0.75; }
+    .agent-btn .label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .agent-menu { position: absolute; z-index: 50; top: 100%; left: 0; margin-top: 2px; min-width: 260px; max-height: 320px; overflow-y: auto; background: var(--vscode-dropdown-background, var(--vscode-editor-background)); color: var(--vscode-dropdown-foreground, var(--vscode-foreground)); border: 1px solid var(--vscode-dropdown-border, var(--vscode-panel-border)); border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.4); padding: 4px; }
     .agent-opt { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 3px; cursor: pointer; }
     .agent-opt:hover, .agent-opt.active { background: var(--vscode-list-hoverBackground, #094771); }

@@ -254,7 +254,16 @@ function renderAgentMenu(): void {
   const btn = document.getElementById("agentBtn") as HTMLButtonElement | null;
   const sel = agents.find((a) => a.id === selectedAgentId);
   if (btn) {
-    btn.textContent = sel ? sel.displayName : t("panel.selectAgent", "Select agent…");
+    if (sel) {
+      // The collapsed button shows the SELECTED agent: render its logo the same way as the
+      // dropdown rows, otherwise the selection appears as bare text with no icon.
+      const logo = sel.iconUri
+        ? `<img class="logo" src="${escapeAttr(sel.iconUri)}" alt="" />`
+        : `<span class="logo lightning">⚡</span>`;
+      btn.innerHTML = `${logo}<span class="label">${escapeAttr(sel.displayName)}</span>`;
+    } else {
+      btn.textContent = t("panel.selectAgent", "Select agent…");
+    }
   }
 }
 
