@@ -13,3 +13,4 @@ node_modules/**/*.pdb
 # agent / dev-only directories that must never ship in the published extension
 .*/
 *.vsix
+docs/
