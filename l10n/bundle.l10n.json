@@ -45,6 +45,5 @@
   "status.install.failed": "{0} install failed: {1}",
   "status.install.unverified": "{0} install reported success, but '{1}' is not runnable — check your PATH",
   "status.install.opened": "Opened {0} download page",
-  "status.noInstallUrl": "No download page is defined for {0}.",
-  "status.updatesAvailable": "{0} agent(s) have updates available"
+  "status.noInstallUrl": "No download page is defined for {0}."
 }
