@@ -10,8 +10,13 @@
   "config.yolo.installedCommands.markdownDescription": "Internal cache of AI agent commands detected on PATH. Maintained automatically — do not edit by hand. (internal)",
   "config.yolo.shell.markdownDescription": "Override the shell used to launch agents and probe PATH. Absolute path or a binary name on PATH. On Windows, leaving this empty auto-detects a POSIX shell (Git Bash / WSL) when needed; otherwise `cmd.exe` is used.",
   "config.yolo.shellArgs.markdownDescription": "Extra arguments passed to the shell before the agent command (e.g. `[\"-l\"]`). Ignored on Windows `cmd.exe`.",
+  "config.yolo.launcherYoloMode.markdownDescription": "Launcher YOLO mode (status-bar): when launching an agent from the `$(rocket) Launch Agent` button into a new terminal, append the agent's `skipFlag` so it runs auto-approved. This toggle is INDEPENDENT of the panel's YOLO toggle (`yolo.skipEnabled`) — the launcher and the panel can run in different modes.",
+  "config.yolo.launcherResumeMode.markdownDescription": "Launcher Resume mode (status-bar): when launching an agent from the `$(rocket) Launch Agent` button, append the agent's `resumeFlag` to continue the most recent session. This toggle is INDEPENDENT of the panel's Resume toggle (`yolo.resumeMode`).",
   "command.openPanel.title": "Agent YOLO: Open Agents Panel",
   "command.openManager.title": "Agent YOLO: Manage Agents",
+  "command.launchAgent.title": "Agent YOLO: Launch Agent",
+  "command.toggleLauncherYolo.title": "Agent YOLO: Toggle Launcher YOLO Mode",
+  "command.toggleLauncherResume.title": "Agent YOLO: Toggle Launcher Resume Mode",
   "viewsContainers.yolo-agents.title": "Agent YOLO",
   "views.yolo.panel.name": "AI Agents"
 }

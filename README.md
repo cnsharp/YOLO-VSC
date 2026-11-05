@@ -21,6 +21,7 @@ frames, type/member names, and URLs all become navigation links.
 - **Embedded interactive terminal**: a real PTY (node-pty + bundled xterm.js) launched inside a login shell, so rc-defined PATH (nvm / fnm / npm global bin) is honoured. Several agents run side by side as **tabs**; each tab keeps its own scrollback and input history.
 - **YOLO toggle** injects the per-agent skip-permission flag (e.g. `--dangerously-skip-permissions`, `-y`, `--yolo`) or environment variable (`GOOSE_MODE=auto`) so agents run without permission prompts.
 - **Resume toggle** continues the agent's most recent session via its `resumeFlag` (e.g. Claude `-r`, Codex `--resume`).
+- **Status-bar Launcher**: a `$(rocket) Launch Agent` button opens a Quick Pick of the installed agents and launches the chosen one in a *new* VS Code terminal (separate from the embedded panel). It has its own **YOLO** (`Y`) and **Resume** (`R`) status-bar toggles — `yolo.launcherYoloMode` / `yolo.launcherResumeMode` — that are **independent** of the panel's `yolo.skipEnabled` / `yolo.resumeMode`, so the launcher and the panel can each run in their own mode. It also registers a Terminal profile per installed agent (available from the Terminal menu).
 - **Clickable terminal links** with de-duplication / priority: `path:line:col`, quoted paths, stack-trace frames, bare file names, Python tracebacks, type names (`com.foo.Bar`), `Class.member` refs, and `http(s)://` URLs.
   (**Type / member links need a language server** — see [Language support](#language-support-install-a-language-server-to-navigate-typemember-links).)
 - **Settings-driven**: agent configuration (skip flags / base args / resume flags, global YOLO & Resume defaults, shell) lives in **VS Code Settings** — edit `yolo.agents` and the other `yolo.*` settings in `settings.json`. There is no in-panel Settings UI. (Internal extension IDs/settings keep the `yolo.` prefix — e.g. the view is `yolo.panel`, settings are `yolo.*` — while the product is branded **Agent YOLO**.)
@@ -104,6 +105,15 @@ Notes:
 - Pick an agent from the dropdown in the panel header and click **Launch** — it opens in a new terminal tab. Only agents detected on PATH are shown.
 - Open more agents to run several side by side; switch tabs like any IDE terminal.
 
+### Launch from the status bar (new terminal)
+
+- Click the **`$(rocket) Launch Agent`** button in the status bar (or run **`Agent YOLO: Launch Agent`** from the Command Palette, command id `yolo.launchAgent`) to open a Quick Pick of installed agents. Selecting one launches it in a **new VS Code terminal**.
+- The picker also lists **Manage Agents** (opens the manager) and **Settings** (opens this extension's settings).
+- Launcher-specific **YOLO** (`Y`) and **Resume** (`R`) toggles sit next to it in the status bar. They apply only to launches triggered from the launcher and are **independent** of the panel's toggle state:
+  - `yolo.launcherYoloMode` — append each agent's `skipFlag` (auto-approve) when launching from the launcher.
+  - `yolo.launcherResumeMode` — append each agent's `resumeFlag` to continue the last session when launching from the launcher.
+- Keybindings: `Ctrl/Cmd+Alt+Y` toggles launcher YOLO, `Ctrl/Cmd+Alt+R` toggles launcher Resume.
+
 ### YOLO mode (skip permissions / auto-approve)
 
 - Click the `$(zap)` button in the panel header to toggle YOLO mode. When on, launching an agent appends that agent's `skipFlag` (or `GOOSE_MODE=auto` for Goose).
@@ -145,6 +155,8 @@ The full, always-up-to-date list of supported agents (generated from `agents.jso
 |---|---|---|---|
 | `yolo.skipEnabled` | boolean | `false` | Master switch for YOLO mode; when on, agents launch with their respective `skipFlag` |
 | `yolo.resumeMode` | boolean | `false` | Master switch for Resume mode; when on, agents launch with their respective `resumeFlag` |
+| `yolo.launcherYoloMode` | boolean | `false` | **Launcher** YOLO toggle (status bar); independent of `yolo.skipEnabled` — applies only to launches from the `$(rocket) Launch Agent` button |
+| `yolo.launcherResumeMode` | boolean | `false` | **Launcher** Resume toggle (status bar); independent of `yolo.resumeMode` — applies only to launches from the `$(rocket) Launch Agent` button |
 | `yolo.agents` | array | `[]` | Overrides / additions merged with `agents.json` (see above) |
 | `yolo.permissionRules` | array | `[]` | Per-agent skip flag as `{ agentId, flag }`; takes precedence over `yolo.agents` `skipFlag` |
 | `yolo.agentResumeFlags` | object | `{}` | Per-agent resume-flag override, keyed by `command` / `id`; precedence over `resumeFlag` |
@@ -159,6 +171,10 @@ Commands:
 | Command id | Title | Trigger |
 |---|---|---|
 | `yolo.openPanel` | Agent YOLO: Open Agents Panel | activity-bar icon / Command Palette |
+| `yolo.openManager` | Agent YOLO: Manage Agents | Command Palette |
+| `yolo.launchAgent` | Agent YOLO: Launch Agent | status-bar `$(rocket)` button / Command Palette |
+| `yolo.toggleLauncherYolo` | Agent YOLO: Toggle Launcher YOLO Mode | status-bar `Y` button / `Ctrl/Cmd+Alt+Y` |
+| `yolo.toggleLauncherResume` | Agent YOLO: Toggle Launcher Resume Mode | status-bar `R` button / `Ctrl/Cmd+Alt+R` |
 
 ## Build & run (development)
 
@@ -175,6 +191,7 @@ npm test           # unit tests for the link engine
 ```
 src/
   extension.ts                 activation + command + view-provider registration
+  launcher.ts                   status-bar Launcher: Quick Pick -> new terminal, independent YOLO/Resume toggles, Terminal profiles
   agents.ts                    loads the built-in catalog from agents.json + resolveAgents()/getAgentConfigWarnings()
   agentDetector.ts             install detection (resolvePath / canExecute), login shell so rc PATH is honoured
   settings/                    settings.json-backed config (schema in package.json contributes.configuration)

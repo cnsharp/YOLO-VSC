@@ -10,8 +10,13 @@
   "config.yolo.installedCommands.markdownDescription": "内部缓存：PATH 上检测到的 AI agent 命令。自动维护 —— 请勿手动编辑。（内部）",
   "config.yolo.shell.markdownDescription": "覆盖用于启动 agent 和探测 PATH 的 shell。可填绝对路径或 PATH 上的可执行文件名。在 Windows 上留空会在需要时自动检测 POSIX shell（Git Bash / WSL），否则使用 `cmd.exe`。",
   "config.yolo.shellArgs.markdownDescription": "在 agent 命令之前传给 shell 的额外参数（例如 `[\"-l\"]`）。Windows 的 `cmd.exe` 会忽略此项。",
+  "config.yolo.launcherYoloMode.markdownDescription": "启动器 YOLO 模式（状态栏）：当你点击 `$(rocket) Launch Agent` 按钮在新终端中启动 agent 时，追加该 agent 的 `skipFlag`，使其以自动批准方式运行。此开关与面板里的 YOLO 开关（`yolo.skipEnabled`）相互**独立** —— 启动器与面板可以处于不同的模式。",
+  "config.yolo.launcherResumeMode.markdownDescription": "启动器恢复模式（状态栏）：当你点击 `$(rocket) Launch Agent` 按钮启动 agent 时，追加该 agent 的 `resumeFlag` 以继续最近一次会话。此开关与面板里的恢复开关（`yolo.resumeMode`）相互**独立**。",
   "command.openPanel.title": "Agent YOLO：打开 Agent 面板",
   "command.openManager.title": "Agent YOLO：管理 Agent",
+  "command.launchAgent.title": "Agent YOLO：启动 Agent",
+  "command.toggleLauncherYolo.title": "Agent YOLO：切换启动器 YOLO 模式",
+  "command.toggleLauncherResume.title": "Agent YOLO：切换启动器恢复模式",
   "viewsContainers.yolo-agents.title": "Agent YOLO",
   "views.yolo.panel.name": "AI Agents"
 }
