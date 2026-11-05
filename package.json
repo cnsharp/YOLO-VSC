@@ -212,6 +212,16 @@
           },
           "default": [],
           "markdownDescription": "%config.yolo.shellArgs.markdownDescription%"
+        },
+        "yolo.launcherYoloMode": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "%config.yolo.launcherYoloMode.markdownDescription%"
+        },
+        "yolo.launcherResumeMode": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "%config.yolo.launcherResumeMode.markdownDescription%"
         }
       }
     },
@@ -227,6 +237,34 @@
         "title": "%command.openManager.title%",
         "category": "Agent YOLO",
         "icon": "$(robot)"
+      },
+      {
+        "command": "yolo.launchAgent",
+        "title": "%command.launchAgent.title%",
+        "category": "Agent YOLO",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "yolo.toggleLauncherYolo",
+        "title": "%command.toggleLauncherYolo.title%",
+        "category": "Agent YOLO"
+      },
+      {
+        "command": "yolo.toggleLauncherResume",
+        "title": "%command.toggleLauncherResume.title%",
+        "category": "Agent YOLO"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "yolo.toggleLauncherYolo",
+        "key": "ctrl+alt+y",
+        "mac": "cmd+alt+y"
+      },
+      {
+        "command": "yolo.toggleLauncherResume",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r"
       }
     ],
     "viewsContainers": {
