@@ -43,6 +43,7 @@
   "manage.update": "Update",
   "manage.openSite": "Website",
   "manage.updateAvailable": "Update available",
+  "manage.statusClosed": "Discontinued",
 
 
   "status.installing": "Installing {0} ({1})…",
