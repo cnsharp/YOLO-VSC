@@ -97,25 +97,40 @@ export function setAgentBaseArgs(map: Record<string, string>): void {
 }
 
 /**
- * In-memory mirror of the installed-agent set. `cfg().update(...)` is asynchronous in real VS Code —
- * the write isn't observable on the very next `cfg().get(...)` within the same tick. Reading the list
- * straight from config right after `setInstalledCommands` therefore returns the STALE value, which
- * left the post-scan `init` (and thus the panel) stuck on "No agents detected". Keeping a synchronous
- * cache here removes that race; we still persist to `yolo.installedCommands` for next-session startup.
+ * In-memory mirror of the installed-agent set. `Memento.update(...)` is asynchronous in real
+ * VS Code — the write isn't observable on the very next `get(...)` within the same tick. Reading the
+ * list straight from storage right after `setInstalledCommands` therefore returns the STALE value,
+ * which left the post-scan `init` (and thus the panel) stuck on "No agents detected". Keeping a
+ * synchronous mirror here removes that race.
+ *
+ * Persisted in `globalState` (INTERNAL — invisible/uneditable in Settings), NOT the old
+ * `yolo.installedCommands` setting. That setting's "Add Item" button misled users into thinking it
+ * was how you add an agent; it is actually an auto-maintained cache and is overwritten on each scan.
+ * Real agents are defined in `yolo.agents`. The old setting is read once as a migration source.
  */
+const INSTALLED_CACHE_KEY = "installedAgents";
+const LEGACY_INSTALLED_SETTING = "installedCommands";
+let installedStore: vscode.Memento | undefined;
 let installedCache: string[] | null = null;
+
+/** Bind the internal cache store. Called once at activation before any read. */
+export function initInstalledStore(ctx: vscode.ExtensionContext): void {
+  installedStore = ctx.globalState;
+}
 
 export function getInstalledCommands(): string[] {
   if (installedCache) {
     return installedCache;
   }
-  installedCache = cfg().get<string[]>("installedCommands", []);
+  const stored = installedStore?.get<string[]>(INSTALLED_CACHE_KEY);
+  // One-time migration from the old (misleading) setting, then ignore it.
+  installedCache = stored ?? cfg().get<string[]>(LEGACY_INSTALLED_SETTING, []);
   return installedCache;
 }
 
 export function setInstalledCommands(commands: string[]): void {
   installedCache = commands;
-  cfg().update("installedCommands", commands, vscode.ConfigurationTarget.Global);
+  void installedStore?.update(INSTALLED_CACHE_KEY, commands);
 }
 
 /**

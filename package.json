@@ -195,11 +195,6 @@
           "default": {},
           "markdownDescription": "%config.yolo.agentBaseArgs.markdownDescription%"
         },
-        "yolo.installedCommands": {
-          "type": "array",
-          "default": [],
-          "markdownDescription": "%config.yolo.installedCommands.markdownDescription%"
-        },
         "yolo.shell": {
           "type": "string",
           "default": "",

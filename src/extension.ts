@@ -10,6 +10,10 @@ import { canExecute } from "./agentDetector";
 import * as settings from "./settings/settings";
 
 export function activate(context: vscode.ExtensionContext): void {
+  // Bind the internal installed-agent cache to globalState BEFORE anything reads
+  // it (the panel's config listener is registered below). It is NOT a user setting.
+  settings.initInstalledStore(context);
+
   // Load the built-in catalog, then overlay the last-good hot-update cache so
   // the previous catalog shows instantly before the network refresh completes.
   initBuiltInAgents(context);
