@@ -5,12 +5,15 @@ import * as vscode from "vscode";
 import { YoloViewProvider } from "./terminal/panel";
 import { AgentManagerPanel } from "./manage/managerPanel";
 import { initBuiltInAgents, resolveAgents, getAgentConfigWarnings } from "./agents";
+import { loadCachedBuiltIns, refreshOnStartup } from "./agentCatalog";
 import { canExecute } from "./agentDetector";
 import * as settings from "./settings/settings";
 
 export function activate(context: vscode.ExtensionContext): void {
-  // Load the built-in agent catalog from agents.json (data, not code).
+  // Load the built-in catalog, then overlay the last-good hot-update cache so
+  // the previous catalog shows instantly before the network refresh completes.
   initBuiltInAgents(context);
+  loadCachedBuiltIns(context);
 
   // Structural config problems (duplicate command / name / id) — logged to the
   // console only (no popup), matching ai-agents-terminal-vsc. Surfaced at startup
@@ -32,26 +35,32 @@ export function activate(context: vscode.ExtensionContext): void {
     })
   );
 
-  const panel = new YoloViewProvider(context.extensionUri);
+  const panel = new YoloViewProvider(context.extensionUri, context.globalStorageUri);
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(YoloViewProvider.viewType, panel)
   );
 
-  // Re-scan installed agents in the background so the panel reflects anything
-  // installed after first run. The panel renders cache-first from the persisted
-  // installed set and re-renders once this probe lands (mirrors `main`'s
-  // cache-first + background-refresh model). When it completes we re-send `init`
-  // so a panel that opened BEFORE the scan finished (and thus got an empty list)
-  // gets refreshed — otherwise it would stay on "No agents detected" until a
-  // manual reload. `sendInit` is a no-op while the view isn't open yet.
-  settings
-    .syncInstalledAgents(
-      resolveAgents().map((a) => ({ id: a.id, command: a.command })),
-      settings.getCustomTools(),
-      canExecute
-    )
-    .then(() => panel.sendInit())
-    .catch((e) => console.error("[YOLO] syncInstalledAgents threw:", e));
+  // Startup sequence — order matters: fetch/merge the remote catalog FIRST, then
+  // re-scan the installed set against the FINAL merged catalog, then refresh the
+  // UI. Scanning before the catalog settles would filter the panel list against
+  // a stale agent set. `onSettled` fires on 200/304/failure, so the scan always
+  // runs after the catalog step, with whatever catalog is now current.
+  void refreshOnStartup(context, () => {
+    // Re-scan installed agents now that the catalog is final. The panel renders
+    // cache-first and re-renders once this probe lands; sendInit after it so a
+    // panel opened early gets the corrected list (no-op while view is closed).
+    settings
+      .syncInstalledAgents(
+        resolveAgents().map((a) => ({ id: a.id, command: a.command })),
+        settings.getCustomTools(),
+        canExecute
+      )
+      .then(() => {
+        panel.sendInit();
+        AgentManagerPanel.refreshIfOpen();
+      })
+      .catch((e) => console.error("[YOLO] syncInstalledAgents threw:", e));
+  });
   // Kill the running PTY on extension deactivation so the agent process isn't orphaned. The session is
   // intentionally kept alive across view hide/move (re-attached, not disposed); only full deactivation
   // tears it down.
@@ -65,7 +74,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // Manage Agents: open the full-page manager (editor-area tab) with install/upgrade actions.
   context.subscriptions.push(
     vscode.commands.registerCommand("yolo.openManager", () =>
-      AgentManagerPanel.show(context.extensionUri)
+      AgentManagerPanel.show(context)
     )
   );
 }

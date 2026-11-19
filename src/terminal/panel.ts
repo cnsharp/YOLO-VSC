@@ -2,11 +2,14 @@
 // webview. Implements vscode.WebviewViewProvider so the panel docks in the activity bar (the IntelliJ
 // "tool window" equivalent) and persists while hidden.
 
-import * as fs from "fs";
 import * as vscode from "vscode";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import { spawnAgent, defaultCwd, type YoloPty, type SpawnBackend, type SpawnResult } from "./terminalProvider";
 import { toSerializable } from "../links/linkPatterns";
 import { resolveAgents, type AgentDef } from "../agents";
+import { findIconFile } from "../manage/icons";
 import { canExecute, resolvePath } from "../agentDetector";
 import * as settings from "../settings/settings";
 import {
@@ -69,7 +72,10 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
   /** Rolling buffer of PTY output per session, replayed into a re-created webview. */
   private static readonly PTY_OUT_CAP = 256 * 1024;
 
-  constructor(private readonly extensionUri: vscode.Uri) {
+  constructor(
+    private readonly extensionUri: vscode.Uri,
+    private readonly globalStorageUri?: vscode.Uri
+  ) {
     // When any yolo.* setting changes (e.g. custom tools edited in Settings), re-scan installs and
     // re-send init so the agent dropdown reflects the latest state without a restart.
     vscode.workspace.onDidChangeConfiguration((e) => {
@@ -95,7 +101,10 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
     this.view = view;
     view.webview.options = {
       enableScripts: true,
-      localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, "media")],
+      localResourceRoots: [
+        vscode.Uri.joinPath(this.extensionUri, "media"),
+        ...(this.globalStorageUri ? [vscode.Uri.joinPath(this.globalStorageUri, "icons", "agents")] : []),
+      ],
     };
     // Register the message handler BEFORE setting html: when the webview script loads it immediately
     // posts `ready` + its first `log` lines. If the handler were attached after `html`, those early
@@ -173,16 +182,8 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
     if (!wv || !icon) {
       return undefined;
     }
-    const base = icon.split("/").pop() ?? "";
-    const name = base.replace(/\.[^.]+$/, "");
-    const dir = vscode.Uri.joinPath(this.extensionUri, "media", "agents");
-    for (const ext of ["svg", "png"]) {
-      const candidate = vscode.Uri.joinPath(dir, `${name}.${ext}`);
-      if (fs.existsSync(candidate.fsPath)) {
-        return wv.asWebviewUri(candidate).toString();
-      }
-    }
-    return undefined;
+    const file = findIconFile(this.extensionUri, this.globalStorageUri, icon);
+    return file ? wv.asWebviewUri(file).toString() : undefined;
   }
 
   /** Webview URIs for the YOLO (skip-permissions) toggle, taken from the IDEA edition. Returns
@@ -272,6 +273,20 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
       case "input":
         this.byId(msg.sessionId)?.pty.write(msg.data);
         break;
+      case "dropFiles":
+        this.handleDroppedFiles(
+          msg as {
+            sessionId: string;
+            paths?: string[];
+            files?: { name: string; data: string }[];
+          }
+        );
+        break;
+      case "dropError": {
+        const err = msg as { key: string; arg?: string };
+        vscode.window.showWarningMessage(t(err.key, err.arg ?? ""));
+        break;
+      }
       case "resize":
         try {
           if (msg.cols > 0 && msg.rows > 0) {
@@ -433,6 +448,83 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
   /** Look up a session by id. */
   private byId(id?: string): YoloSession | undefined {
     return id ? this.sessions.find((s) => s.id === id) : undefined;
+  }
+
+  /** Turn one dropped path (URI string or plain path) into a shell-ready argument for the agent:
+   *  workspace-relative when possible, quoted when whitespace/shell metacharacters require it. */
+  private droppedPathArg(raw: string): string | undefined {
+    const s = raw.trim();
+    if (!s) return undefined;
+    const isWindowsPath = /^[A-Za-z]:[\\/]/.test(s) || s.startsWith("\\\\");
+    let uri: vscode.Uri;
+    try {
+      uri = isWindowsPath || s.startsWith("/") ? vscode.Uri.file(s) : vscode.Uri.parse(s);
+    } catch {
+      return undefined;
+    }
+    if (
+      uri.scheme !== "file" &&
+      !uri.scheme.startsWith("vscode-remote") &&
+      uri.scheme !== "vscode-vfs"
+    ) {
+      return undefined;
+    }
+    let arg = vscode.workspace.asRelativePath(uri, false) || uri.fsPath;
+    // Backslash-separated Windows paths keep their separators inside quotes (cmd.exe semantics).
+    if (isWindowsPath || process.platform === "win32") {
+      return /\s/.test(arg) ? `"${arg}"` : arg;
+    }
+    // POSIX: quote when the shell would split / glob / interpolate, escaping what matters in "".
+    if (/[\s"'`$&;<>()|*?\[\]{}!\\]/.test(arg)) {
+      arg = `"${arg.replace(/(["\\$`])/g, "\\$1")}"`;
+    }
+    return arg;
+  }
+
+  /** Insert dropped file paths at the active terminal's cursor WITHOUT submitting the line. */
+  private handleDroppedFiles(msg: {
+    sessionId: string;
+    paths?: string[];
+    files?: { name: string; data: string }[];
+  }): void {
+    const session = this.byId(msg.sessionId);
+    if (!session) return;
+    const args: string[] = [];
+    for (const p of msg.paths ?? []) {
+      const arg = this.droppedPathArg(p);
+      if (arg) args.push(arg);
+    }
+    // OS-dropped files arrive as base64 bytes (the webview cannot see their source path). Materialise
+    // them under the extension's storage so the agent can open them by an absolute path.
+    for (const f of msg.files ?? []) {
+      const temp = this.materializeDroppedFile(f);
+      if (temp) args.push(this.droppedPathArg(temp) ?? temp);
+    }
+    if (args.length === 0) {
+      vscode.window.showWarningMessage(t("panel.dropNoPath"));
+      return;
+    }
+    // addNewLine=false: the VS Code terminal backend's sendText would otherwise submit the line.
+    session.pty.write(args.join(" ") + " ", false);
+  }
+
+  /** Write one OS-dropped file (read as base64 by the sandboxed webview) to a temp location. Keeps
+   *  the original basename/extension so the agent can detect the language/type. */
+  private materializeDroppedFile(file: { name: string; data: string }): string | undefined {
+    try {
+      const raw = (file.name || "dropped").split(/[\\/]/).pop() || "dropped";
+      const base = raw.replace(/[^A-Za-z0-9._\- ()]/g, "_") || "dropped";
+      const dir = this.globalStorageUri
+        ? path.join(this.globalStorageUri.fsPath, "drops")
+        : path.join(os.tmpdir(), "yolo-drops");
+      fs.mkdirSync(dir, { recursive: true });
+      const target = path.join(dir, `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${base}`);
+      fs.writeFileSync(target, Buffer.from(file.data, "base64"));
+      return target;
+    } catch (e) {
+      console.error("[YOLO] failed to materialize dropped file:", e);
+      return undefined;
+    }
   }
 
   /** Ask before tearing down a terminal, since closing kills the running PTY (IDEA: confirmCloseTab). */

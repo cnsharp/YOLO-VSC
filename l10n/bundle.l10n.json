@@ -18,6 +18,11 @@
   "panel.noSymbol": "YOLO: no symbol found for '{0}'.",
   "panel.noMember": "YOLO: no member '{0}' found for '{1}'.",
   "panel.navigationFailed": "YOLO navigation failed: {0}",
+  "panel.dropHint": "Release to insert file paths into the terminal",
+  "panel.dropNoSession": "Launch an agent first, then drop files into its terminal",
+  "panel.dropNoPath": "YOLO: couldn't get a path for the dropped file.",
+  "panel.dropReadFailed": "YOLO: couldn't read a dropped file.",
+  "panel.dropTooLarge": "YOLO: a dropped file exceeds the {0} MB limit.",
 
   "warning.skip.body": "You are launching an AI agent with \"Skip permissions\" (YOLO mode) enabled. The agent will run commands and edit files without your confirmation. This can make irreversible changes, execute untrusted code, or expose your system. Only continue in a trusted environment.",
   "button.launchAnyway": "Launch anyway",

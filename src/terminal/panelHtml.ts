@@ -28,8 +28,8 @@ export function renderPanelHtml(
     #bar .yolo-toggle:not(.active) .ic-off { display: inline-block; }
     #bar .yolo-toggle.active .ic-on { display: inline-block; }
     #bar button:hover { background: var(--vscode-button-secondaryHoverBackground, #444); }
-    #bar #settings { width: 28px; height: 24px; padding: 0; font-size: 14px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
-    #bar #manage { width: 28px; height: 24px; padding: 0; font-size: 13px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; margin-left: auto; }
+    #bar #settings { width: 32px; height: 28px; padding: 0; font-size: 18px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+    #bar #manage { width: 32px; height: 28px; padding: 0; font-size: 17px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; margin-left: auto; }
     #bar #settings { margin-left: 0; }
     .agent-pick { position: relative; display: inline-block; }
     .agent-btn { min-width: 140px; text-align: left; display: inline-flex; align-items: center; gap: 6px; }
@@ -41,6 +41,8 @@ export function renderPanelHtml(
     .agent-opt:hover, .agent-opt.active { background: var(--vscode-list-hoverBackground, #094771); }
     .agent-opt .logo { width: 18px; height: 18px; flex: 0 0 auto; object-fit: contain; border-radius: 4px; }
     .agent-opt .logo.lightning { display: inline-flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; opacity: 0.75; }
+    /* codex/pi ship a black-on-transparent PNG; invert it in dark themes so the glyph stays visible. */
+    body.vscode-dark img.logo[src*="codex.png"], body.vscode-dark img.logo[src*="pi.png"] { filter: invert(1); }
     /* The "switch terminal" chevron sits at the RIGHT edge of the tab strip, so its menu must open
        leftwards (right-aligned to the button) — .agent-menu's default left:0 would push it past the
        panel edge and get it clipped. */
@@ -86,6 +88,11 @@ export function renderPanelHtml(
       border-radius: 4px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.35);
     }
+    /* Drag & drop hint: covers the panel while a file is dragged over it. pointer-events:none lets
+       the drop reach the document-level listeners underneath; [hidden] must win over display:flex. */
+    #dropOverlay { position: absolute; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); pointer-events: none; }
+    #dropOverlay[hidden] { display: none; }
+    #dropOverlay .drop-box { max-width: 80%; padding: 16px 22px; border: 2px dashed var(--vscode-focusBorder, #007fd4); border-radius: 8px; background: var(--vscode-editor-background, #1e1e1e); color: var(--vscode-foreground, #cccccc); font-size: 13px; line-height: 1.5; text-align: center; box-shadow: 0 4px 18px rgba(0,0,0,0.5); }
   </style>
 </head>
 <body>
@@ -110,6 +117,7 @@ export function renderPanelHtml(
   <div id="content">
     <div id="empty">${t("panel.emptyHint")}</div>
   </div>
+  <div id="dropOverlay" hidden><div class="drop-box"><span id="dropOverlayText"></span></div></div>
   <script src="${scriptUri}"></script>
 </body>
 </html>`;

@@ -34,7 +34,9 @@ export interface SpawnOptions {
 
 export interface YoloPty {
   onData(cb: (data: string) => void): void;
-  write(data: string): void;
+  /** Write raw input to the agent. `addNewLine` is only honoured by the VS Code terminal fallback
+   *  (`sendText` appends a newline by default); pass false to insert text without submitting it. */
+  write(data: string, addNewLine?: boolean): void;
   resize(cols: number, rows: number): void;
   kill(): void;
 }
@@ -136,10 +138,12 @@ export function spawnAgent(opts: SpawnOptions): SpawnResult {
           /* no-op in vscode-terminal backend */
         },
         // Raw keystrokes are forwarded verbatim if the webview ever sends them; the user normally types
-        // directly in the revealed VS Code terminal.
-        write: (d) => {
+        // directly in the revealed VS Code terminal. `sendText` appends a newline by default — that
+        // would submit the line, so callers that only want to insert text (e.g. dropped file paths)
+        // pass addNewLine=false.
+        write: (d, addNewLine) => {
           try {
-            terminal.sendText(d);
+            terminal.sendText(d, addNewLine ?? true);
           } catch {
             /* terminal gone */
           }

@@ -1276,6 +1276,130 @@ function registerLinkProvider(s: SessionView): void {
 // they act on every session. ---
 try {
   renderTabs();
+
+  // --- Drag & drop files: dropping a file/URI from the Explorer inserts its path into the active
+  // terminal. Every drag is accepted unconditionally — VS Code may not populate `dataTransfer.types`
+  // during dragover (only at drop), so filtering by file-ish MIME types here makes Explorer files
+  // silently open in an editor instead of reaching `drop`. OS file drags still work because they
+  // expose File objects in `drop`. ---
+  const dropTarget = (): SessionView | undefined => byId(activeId);
+  const showDropOverlay = (show: boolean): void => {
+    const overlay = document.getElementById("dropOverlay");
+    if (!overlay) return;
+    if (show) {
+      const label = document.getElementById("dropOverlayText");
+      if (label) {
+        label.textContent = dropTarget()
+          ? t("panel.dropHint", "Release to insert file paths into the terminal")
+          : t("panel.dropNoSession", "Launch an agent first, then drop files into its terminal");
+      }
+    }
+    overlay.hidden = !show;
+  };
+  const extractDropPaths = (dt: DataTransfer): string[] => {
+    // OS file-manager (Finder/Explorer) drags expose File objects. Newer Electron dropped `.path`,
+    // but when present it is the real source path — prefer it over the base64 copy fallback.
+    const out: string[] = [];
+    for (let i = 0; i < dt.files.length; i++) {
+      const p = (dt.files[i] as File & { path?: string }).path;
+      if (p) out.push(p);
+    }
+    return out;
+  };
+
+  let dragDepth = 0;
+  // Capture phase + stopImmediatePropagation: VS Code installs drag handlers above the webview that
+  // would otherwise open the file in an editor instead of delivering `drop` into the webview at all.
+  const dragOpts: AddEventListenerOptions = { capture: true };
+  window.addEventListener(
+    "dragenter",
+    (e: DragEvent) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      dragDepth++;
+      showDropOverlay(true);
+    },
+    dragOpts
+  );
+  window.addEventListener(
+    "dragover",
+    (e: DragEvent) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+      showDropOverlay(true);
+    },
+    dragOpts
+  );
+  window.addEventListener(
+    "dragleave",
+    () => {
+      if (dragDepth > 0 && --dragDepth === 0) showDropOverlay(false);
+    },
+    dragOpts
+  );
+  window.addEventListener(
+    "drop",
+    (e: DragEvent) => {
+      // No isFileDrag gate here: some hosts clear `types` by the time `drop` fires.
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      dragDepth = 0;
+    showDropOverlay(false);
+    const session = dropTarget();
+    if (!session) {
+      vscode.postMessage({ type: "dropError", key: "panel.dropNoSession" });
+      return;
+    }
+    const dt = e.dataTransfer!;
+    const paths = extractDropPaths(dt);
+    if (paths.length > 0) {
+      vscode.postMessage({ type: "dropFiles", sessionId: session.id, paths });
+      return;
+    }
+    // OS file-manager drag: the webview sandbox hides the source path. Read the bytes here and let
+    // the host materialise a temp file, so dragging from Finder/Explorer is still useful.
+    const files = dt.files;
+    if (files.length === 0) {
+      vscode.postMessage({ type: "dropError", key: "panel.dropNoPath" });
+      return;
+    }
+    const MAX_BYTES = 25 * 1024 * 1024;
+    const tasks: Promise<{ name: string; data: string } | undefined>[] = [];
+    let tooLarge = 0;
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      if (f.size > MAX_BYTES) {
+        tooLarge++;
+        continue;
+      }
+      tasks.push(
+        new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const res = String(reader.result);
+            const comma = res.indexOf(",");
+            resolve({ name: f.name, data: comma >= 0 ? res.slice(comma + 1) : res });
+          };
+          reader.onerror = () => resolve(undefined);
+          reader.readAsDataURL(f);
+        })
+      );
+    }
+    void Promise.all(tasks).then((loaded) => {
+      const payloads = loaded.filter((p): p is { name: string; data: string } => Boolean(p));
+      if (payloads.length > 0) {
+        vscode.postMessage({ type: "dropFiles", sessionId: session.id, files: payloads });
+      } else if (tooLarge > 0) {
+        vscode.postMessage({ type: "dropError", key: "panel.dropTooLarge", arg: "25" });
+      } else {
+        vscode.postMessage({ type: "dropError", key: "panel.dropReadFailed" });
+      }
+    });
+    },
+    dragOpts
+  );
+
   // Keep every tab sized to the panel; a hidden card still has a layout box, so this fits them all.
   window.addEventListener("resize", () => fitAll());
   // When the panel is hidden and reshown (retainContextWhenHidden keeps the context alive), re-fit so

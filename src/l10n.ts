@@ -69,6 +69,8 @@ const WEBVIEW_KEYS = [
   "panel.noAgentsHint",
   "panel.closeTabConfirm",
   "panel.closeTabConfirmAction",
+  "panel.dropHint",
+  "panel.dropNoSession",
   "manage.title",
   "manage.heading",
   "manage.checkUpdates",

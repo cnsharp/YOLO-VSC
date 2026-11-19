@@ -18,6 +18,11 @@
   "panel.noSymbol": "YOLO：未找到符号 '{0}'。",
   "panel.noMember": "YOLO：在 '{1}' 中未找到成员 '{0}'。",
   "panel.navigationFailed": "YOLO 导航失败：{0}",
+  "panel.dropHint": "松开以将文件路径插入终端",
+  "panel.dropNoSession": "请先启动 Agent，再将文件拖入其终端",
+  "panel.dropNoPath": "YOLO：无法获取拖入文件的路径。",
+  "panel.dropReadFailed": "YOLO：无法读取拖入的文件。",
+  "panel.dropTooLarge": "YOLO：拖入的文件超过 {0} MB 限制。",
 
   "warning.skip.body": "你正在以“跳过权限”（YOLO 模式）启动 AI agent。该 agent 将在无需确认的情况下运行命令、修改文件，可能造成不可逆的更改、执行不受信任的代码或暴露你的系统。仅在可信环境中继续。",
   "button.launchAnyway": "仍然启动",
