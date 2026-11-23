@@ -208,6 +208,11 @@
           "default": [],
           "markdownDescription": "%config.yolo.shellArgs.markdownDescription%"
         },
+        "yolo.launcherEnabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "%config.yolo.launcherEnabled.markdownDescription%"
+        },
         "yolo.launcherYoloMode": {
           "type": "boolean",
           "default": false,

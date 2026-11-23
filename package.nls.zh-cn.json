@@ -9,6 +9,7 @@
   "config.yolo.agentBaseArgs.markdownDescription": "每个 agent 的额外启动参数，以 agent 小写 `id` 为键（也可匹配 `command`）。追加在 agent 自身 `baseArgs`（来自 `yolo.agents`）之后。推荐直接在 `yolo.agents` 的 agent 上设置 `baseArgs`；只有需要一份共享映射时才用这里。示例：\n```json\n\"yolo.agentBaseArgs\": { \"cursor-agent\": \"agent\", \"kilo\": \"run\" }\n```",
   "config.yolo.shell.markdownDescription": "覆盖用于启动 agent 和探测 PATH 的 shell。可填绝对路径或 PATH 上的可执行文件名。在 Windows 上留空会在需要时自动检测 POSIX shell（Git Bash / WSL），否则使用 `cmd.exe`。",
   "config.yolo.shellArgs.markdownDescription": "在 agent 命令之前传给 shell 的额外参数（例如 `[\"-l\"]`）。Windows 的 `cmd.exe` 会忽略此项。",
+  "config.yolo.launcherEnabled.markdownDescription": "显示状态栏中的 Launch Agent 启动器（`$(rocket) Launch Agent`、Y 和 R 三个按钮）。设为 `false` 可隐藏全部三个按钮。`yolo.launchAgent`、`yolo.toggleLauncherYolo` 和 `yolo.toggleLauncherResume` 命令仍可从命令面板调用。",
   "config.yolo.launcherYoloMode.markdownDescription": "启动器 YOLO 模式（状态栏）：当你点击 `$(rocket) Launch Agent` 按钮在新终端中启动 agent 时，追加该 agent 的 `skipFlag`，使其以自动批准方式运行。此开关与面板里的 YOLO 开关（`yolo.skipEnabled`）相互**独立** —— 启动器与面板可以处于不同的模式。",
   "config.yolo.launcherResumeMode.markdownDescription": "启动器恢复模式（状态栏）：当你点击 `$(rocket) Launch Agent` 按钮启动 agent 时，追加该 agent 的 `resumeFlag` 以继续最近一次会话。此开关与面板里的恢复开关（`yolo.resumeMode`）相互**独立**。",
   "command.openPanel.title": "Agent YOLO：打开 Agent 面板",

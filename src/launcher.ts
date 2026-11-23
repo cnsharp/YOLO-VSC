@@ -37,6 +37,7 @@ const TOGGLE_RESUME_COMMAND = "yolo.toggleLauncherResume";
 
 // Launcher-specific settings (independent from the panel's yolo.skipEnabled /
 // yolo.resumeMode — see the file header).
+const LAUNCHER_ENABLED_KEY = "launcherEnabled";
 const LAUNCHER_YOLO_KEY = "launcherYoloMode";
 const LAUNCHER_RESUME_KEY = "launcherResumeMode";
 
@@ -333,6 +334,7 @@ export function registerLauncher(ctx: vscode.ExtensionContext): void {
 
   const refresh = () => {
     const cfg = vscode.workspace.getConfiguration("yolo");
+    const enabled = cfg.get<boolean>(LAUNCHER_ENABLED_KEY, true);
     const yolo = cfg.get<boolean>(LAUNCHER_YOLO_KEY, false);
     const resume = cfg.get<boolean>(LAUNCHER_RESUME_KEY, false);
     launcherSb.tooltip = yolo
@@ -358,9 +360,15 @@ export function registerLauncher(ctx: vscode.ExtensionContext): void {
     resumeSb.color = resume
       ? undefined
       : new vscode.ThemeColor("statusBarItem.offForeground");
-    launcherSb.show();
-    yoloSb.show();
-    resumeSb.show();
+    if (enabled) {
+      launcherSb.show();
+      yoloSb.show();
+      resumeSb.show();
+    } else {
+      launcherSb.hide();
+      yoloSb.hide();
+      resumeSb.hide();
+    }
   };
 
   refresh();
@@ -379,6 +387,7 @@ export function registerLauncher(ctx: vscode.ExtensionContext): void {
   ctx.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (
+        e.affectsConfiguration(`yolo.${LAUNCHER_ENABLED_KEY}`) ||
         e.affectsConfiguration(`yolo.${LAUNCHER_YOLO_KEY}`) ||
         e.affectsConfiguration(`yolo.${LAUNCHER_RESUME_KEY}`)
       ) {
