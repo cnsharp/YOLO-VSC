@@ -117,7 +117,7 @@ export function spawnAgent(opts: SpawnOptions): SpawnResult {
     let terminal: vscode.Terminal;
     try {
       terminal = vscode.window.createTerminal({
-        name: `YOLO: ${opts.command}`,
+        name: opts.command,
         shellPath: fb.shell,
         shellArgs: fb.args,
         cwd: opts.cwd,
