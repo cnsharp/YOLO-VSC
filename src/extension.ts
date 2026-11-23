@@ -4,6 +4,7 @@
 import * as vscode from "vscode";
 import { YoloViewProvider } from "./terminal/panel";
 import { AgentManagerPanel } from "./manage/managerPanel";
+import { registerLauncher } from "./launcher";
 import { initBuiltInAgents, resolveAgents, getAgentConfigWarnings } from "./agents";
 import { loadCachedBuiltIns, refreshOnStartup } from "./agentCatalog";
 import { canExecute } from "./agentDetector";
@@ -81,6 +82,11 @@ export function activate(context: vscode.ExtensionContext): void {
       AgentManagerPanel.show(context)
     )
   );
+
+  // Agent Launcher: status-bar button + Quick Pick that launches an agent in a
+  // NEW terminal, with its own (independent) YOLO / Resume toggles. Shares the
+  // agent catalog + `yolo.agents` config with the panel above.
+  registerLauncher(context);
 }
 
 export function deactivate(): void {
