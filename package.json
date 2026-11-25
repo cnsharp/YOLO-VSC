@@ -2,7 +2,7 @@
   "name": "agentyolo",
   "displayName": "Agent YOLO",
   "description": "Launch AI CLI agents (Claude Code, Codex, Cursor CLI, …) in an embedded terminal with clickable file/type links.",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "publisher": "cnsharp",
   "repository": {
     "type": "git",
@@ -20,11 +20,17 @@
     "theme": "dark"
   },
   "activationEvents": [
+    "onStartupFinished",
     "onView:yolo.panel",
     "onCommand:yolo.openPanel",
     "onCommand:yolo.openManager"
   ],
   "main": "./out/extension.js",
+  "capabilities": {
+    "agentsWindow": {
+      "supported": true
+    }
+  },
   "l10n": "./l10n",
   "contributes": {
     "configuration": {
@@ -222,9 +228,60 @@
           "type": "boolean",
           "default": false,
           "markdownDescription": "%config.yolo.launcherResumeMode.markdownDescription%"
+        },
+        "yolo.nativeChat.agentCliArgs": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "markdownDescription": "%config.yolo.nativeChat.agentCliArgs.markdownDescription%"
+        },
+        "yolo.nativeChat.autoApprove": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "%config.yolo.nativeChat.autoApprove.markdownDescription%"
+        },
+        "yolo.nativeChat.timeoutSeconds": {
+          "type": "number",
+          "default": 180,
+          "minimum": 5,
+          "markdownDescription": "%config.yolo.nativeChat.timeoutSeconds.markdownDescription%"
+        },
+        "yolo.nativeChat.maxOutputChars": {
+          "type": "number",
+          "default": 30000,
+          "minimum": 1000,
+          "markdownDescription": "%config.yolo.nativeChat.maxOutputChars.markdownDescription%"
         }
       }
     },
+    "languageModelTools": [
+      {
+        "name": "agentyolo_runCliAgent",
+        "displayName": "Run Agent YOLO CLI agent",
+        "modelDescription": "Runs one of the installed AI coding CLI agents (Claude Code, Codex, Gemini-style CLIs, etc.) headlessly on the given prompt and returns its output verbatim. Use this tool whenever the user asks a task of a specific CLI agent, or when a custom agent instructs you to delegate to one. The prompt is passed to the real CLI binary, not answered from your own knowledge.",
+        "canBeReferencedInPrompt": true,
+        "toolReferenceName": "runCliAgent",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "agent": {
+              "type": "string",
+              "description": "The agent id or command from the Agent YOLO catalog, e.g. claude, codex, cursor, copilot."
+            },
+            "prompt": {
+              "type": "string",
+              "description": "The full request to forward verbatim to the CLI agent."
+            }
+          },
+          "required": [
+            "agent",
+            "prompt"
+          ]
+        }
+      }
+    ],
     "commands": [
       {
         "command": "yolo.openPanel",
@@ -237,6 +294,11 @@
         "title": "%command.openManager.title%",
         "category": "Agent YOLO",
         "icon": "$(robot)"
+      },
+      {
+        "command": "yolo.refreshChatAgents",
+        "title": "%command.refreshChatAgents.title%",
+        "category": "Agent YOLO"
       },
       {
         "command": "yolo.launchAgent",
@@ -286,12 +348,203 @@
           "retainContextWhenHidden": true
         }
       ]
-    }
+    },
+    "chatAgents": [
+      {
+        "path": "./agents/claude.agent.md",
+        "when": "yolo.agentInstalled.claude"
+      },
+      {
+        "path": "./agents/codex.agent.md",
+        "when": "yolo.agentInstalled.codex"
+      },
+      {
+        "path": "./agents/cursor.agent.md",
+        "when": "yolo.agentInstalled.cursor"
+      },
+      {
+        "path": "./agents/opencode.agent.md",
+        "when": "yolo.agentInstalled.opencode"
+      },
+      {
+        "path": "./agents/aider.agent.md",
+        "when": "yolo.agentInstalled.aider"
+      },
+      {
+        "path": "./agents/cline.agent.md",
+        "when": "yolo.agentInstalled.cline"
+      },
+      {
+        "path": "./agents/continue.agent.md",
+        "when": "yolo.agentInstalled.continue"
+      },
+      {
+        "path": "./agents/openclaw.agent.md",
+        "when": "yolo.agentInstalled.openclaw"
+      },
+      {
+        "path": "./agents/kiro.agent.md",
+        "when": "yolo.agentInstalled.kiro"
+      },
+      {
+        "path": "./agents/goose.agent.md",
+        "when": "yolo.agentInstalled.goose"
+      },
+      {
+        "path": "./agents/crush.agent.md",
+        "when": "yolo.agentInstalled.crush"
+      },
+      {
+        "path": "./agents/amp.agent.md",
+        "when": "yolo.agentInstalled.amp"
+      },
+      {
+        "path": "./agents/kimi.agent.md",
+        "when": "yolo.agentInstalled.kimi"
+      },
+      {
+        "path": "./agents/qwen-code.agent.md",
+        "when": "yolo.agentInstalled.qwen_code"
+      },
+      {
+        "path": "./agents/trae.agent.md",
+        "when": "yolo.agentInstalled.trae"
+      },
+      {
+        "path": "./agents/codebuddy.agent.md",
+        "when": "yolo.agentInstalled.codebuddy"
+      },
+      {
+        "path": "./agents/qoder.agent.md",
+        "when": "yolo.agentInstalled.qoder"
+      },
+      {
+        "path": "./agents/qodercn.agent.md",
+        "when": "yolo.agentInstalled.qodercn"
+      },
+      {
+        "path": "./agents/devin.agent.md",
+        "when": "yolo.agentInstalled.devin"
+      },
+      {
+        "path": "./agents/grok.agent.md",
+        "when": "yolo.agentInstalled.grok"
+      },
+      {
+        "path": "./agents/antigravity.agent.md",
+        "when": "yolo.agentInstalled.antigravity"
+      },
+      {
+        "path": "./agents/mistral-vibe.agent.md",
+        "when": "yolo.agentInstalled.mistral_vibe"
+      },
+      {
+        "path": "./agents/kilo.agent.md",
+        "when": "yolo.agentInstalled.kilo"
+      },
+      {
+        "path": "./agents/hermes.agent.md",
+        "when": "yolo.agentInstalled.hermes"
+      },
+      {
+        "path": "./agents/pi.agent.md",
+        "when": "yolo.agentInstalled.pi"
+      },
+      {
+        "path": "./agents/droid.agent.md",
+        "when": "yolo.agentInstalled.droid"
+      },
+      {
+        "path": "./agents/aug.agent.md",
+        "when": "yolo.agentInstalled.aug"
+      },
+      {
+        "path": "./agents/prime-agent.agent.md",
+        "when": "yolo.agentInstalled.prime_agent"
+      },
+      {
+        "path": "./agents/autohand.agent.md",
+        "when": "yolo.agentInstalled.autohand"
+      },
+      {
+        "path": "./agents/command-code.agent.md",
+        "when": "yolo.agentInstalled.command_code"
+      },
+      {
+        "path": "./agents/ante.agent.md",
+        "when": "yolo.agentInstalled.ante"
+      },
+      {
+        "path": "./agents/codebuff.agent.md",
+        "when": "yolo.agentInstalled.codebuff"
+      },
+      {
+        "path": "./agents/omp.agent.md",
+        "when": "yolo.agentInstalled.omp"
+      },
+      {
+        "path": "./agents/cortex-code.agent.md",
+        "when": "yolo.agentInstalled.cortex_code"
+      },
+      {
+        "path": "./agents/corust-agent.agent.md",
+        "when": "yolo.agentInstalled.corust_agent"
+      },
+      {
+        "path": "./agents/crow-cli.agent.md",
+        "when": "yolo.agentInstalled.crow_cli"
+      },
+      {
+        "path": "./agents/dirac.agent.md",
+        "when": "yolo.agentInstalled.dirac"
+      },
+      {
+        "path": "./agents/dimcode.agent.md",
+        "when": "yolo.agentInstalled.dimcode"
+      },
+      {
+        "path": "./agents/fast-agent.agent.md",
+        "when": "yolo.agentInstalled.fast_agent"
+      },
+      {
+        "path": "./agents/harn.agent.md",
+        "when": "yolo.agentInstalled.harn"
+      },
+      {
+        "path": "./agents/junie.agent.md",
+        "when": "yolo.agentInstalled.junie"
+      },
+      {
+        "path": "./agents/minion-code.agent.md",
+        "when": "yolo.agentInstalled.minion_code"
+      },
+      {
+        "path": "./agents/nova.agent.md",
+        "when": "yolo.agentInstalled.nova"
+      },
+      {
+        "path": "./agents/poolside.agent.md",
+        "when": "yolo.agentInstalled.poolside"
+      },
+      {
+        "path": "./agents/sigit.agent.md",
+        "when": "yolo.agentInstalled.sigit"
+      },
+      {
+        "path": "./agents/stakpak.agent.md",
+        "when": "yolo.agentInstalled.stakpak"
+      },
+      {
+        "path": "./agents/vtcode.agent.md",
+        "when": "yolo.agentInstalled.vtcode"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run build",
     "postinstall": "node scripts/ensure-node-pty-exec.cjs",
-    "build": "npm run compile && npm run build:webview && node scripts/ensure-node-pty-exec.cjs",
+    "generate": "node scripts/generate-native-chat-agents.cjs",
+    "build": "npm run generate && npm run compile && npm run build:webview && node scripts/ensure-node-pty-exec.cjs",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "build:webview": "esbuild src/webview/panel.ts src/webview/manage.ts --bundle --outdir=media/dist --loader:.css=css --sourcemap",

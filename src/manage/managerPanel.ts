@@ -7,6 +7,7 @@ import * as vscode from "vscode";
 import { resolveAgents, resolveBuiltInAgents, installAutomatableOnPlatform, installTarget, TERMINAL_STATUSES, type AgentDef } from "../agents";
 import { canExecute, invalidateExecutableCache } from "../agentDetector";
 import * as settings from "../settings/settings";
+import { syncNativeChatAgentContext } from "../nativeChat/agentAvailability";
 import { agentIconUri, globalIconDir } from "./icons";
 import { renderManagerHtml } from "./managerHtml";
 import { webviewAssetUri } from "../terminal/panelHtml";
@@ -262,6 +263,7 @@ export class AgentManagerPanel {
         settings.getCustomTools(),
         canExecute
       );
+      syncNativeChatAgentContext();
       if (!canExecute(def.command)) {
         this.postResult(
           agentId,

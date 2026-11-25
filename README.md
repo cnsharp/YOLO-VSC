@@ -24,6 +24,7 @@ frames, type/member names, and URLs all become navigation links.
 - **Status-bar Launcher**: a `$(rocket) Launch Agent` button opens a Quick Pick of the installed agents and launches the chosen one in a *new* VS Code terminal (separate from the embedded panel). It has its own **YOLO** (`Y`) and **Resume** (`R`) status-bar toggles — `yolo.launcherYoloMode` / `yolo.launcherResumeMode` — that are **independent** of the panel's `yolo.skipEnabled` / `yolo.resumeMode`, so the launcher and the panel can each run in their own mode. It also registers a Terminal profile per installed agent (available from the Terminal menu).
 - **Clickable terminal links** with de-duplication / priority: `path:line:col`, quoted paths, stack-trace frames, bare file names, Python tracebacks, type names (`com.foo.Bar`), `Class.member` refs, and `http(s)://` URLs.
   (**Type / member links need a language server** — see [Language support](#language-support-install-a-language-server-to-navigate-typemember-links).)
+- **Native chat agents** *(since 1.3.0; VS Code 1.106+)*: every installed catalog agent is also available in the **Chat view's Agent dropdown** via generated `.agent.md` files. Selecting one routes the whole request to the real CLI through a bundled language model tool, with the output returned verbatim. See [Use agents in VS Code native chat](#use-agents-in-vs-code-native-chat) for the scope and setup.
 - **Settings-driven**: agent configuration (skip flags / base args / resume flags, global YOLO & Resume defaults, shell) lives in **VS Code Settings** — edit `yolo.agents` and the other `yolo.*` settings in `settings.json`. There is no in-panel Settings UI. (Internal extension IDs/settings keep the `yolo.` prefix — e.g. the view is `yolo.panel`, settings are `yolo.*` — while the product is branded **Agent YOLO**.)
 
 > **Panel location.** The Agents panel opens in the **Primary Side Bar** (the activity bar, on the left) by default.
@@ -149,6 +150,25 @@ Fields: `command` (required) / `displayName` / `baseArgs` / `skipFlag` / `resume
 
 The full, always-up-to-date list of supported agents (generated from `agents.json`) is maintained in the [Agent YOLO family README](https://github.com/cnsharp/Agent-YOLO/blob/main/Meta/README.md#supported-agents). It is shared across all editions, so it is not duplicated here.
 
+### Use agents in VS Code native chat *(since 1.3.0)*
+
+On **VS Code 1.106+**, every catalog agent that is **installed on PATH** is contributed to VS Code as a [custom agent](https://code.visualstudio.com/docs/copilot/customization/custom-agents). The generated `.agent.md` files route the request to the real CLI binary through a `languageModelTools` tool, so the installed CLI — not the model — produces the answer.
+
+**Scope (important):**
+- Works in the editor's **Chat view** with the **Local harness** only. The Copilot harness and the Agents window use harness-owned agent sources and do **not** see extension-contributed agents.
+- The Local harness is deprecated in VS Code 1.146 and is scheduled for removal in **February 2027**; this integration is tied to that timeline.
+- Only agents detected on PATH appear. After installing/uninstalling a CLI outside the extension, run **`Agent YOLO: Refresh Chat Agents`** to re-probe and update the dropdown.
+
+**Usage:**
+1. Open the Chat view (`Ctrl/Cmd+Alt+I`) and start a new chat.
+2. Select **Local** from the **Session Target** control. In VS Code 1.147+ the deprecated Local harness is hidden by default — enable it in `settings.json`:
+   ```json
+   { "chat.editor.localAgent.enabled": true, "chat.defaultToCopilotHarness": false }
+   ```
+3. Pick your CLI agent from the **Agent** dropdown (e.g. `Claude Code`), then send the request.
+
+**Customizing:** `yolo.nativeChat.agentCliArgs` sets per-agent non-interactive arguments. Built-in defaults were verified from each CLI's `--help` or official docs (e.g. `claude -p`, `codex exec`, `goose run -t`, `hermes chat -q`, `vtcode exec`); agents without a verified headless form get no extra flags and can be configured here. `yolo.nativeChat.autoApprove`, `timeoutSeconds` and `maxOutputChars` control execution. The `.agent.md` files are regenerated from `agents.json` on every build (`npm run generate`), so no manual sync is needed.
+
 ## Settings reference
 
 | Setting | Type | Default | Description |
@@ -165,6 +185,10 @@ The full, always-up-to-date list of supported agents (generated from `agents.jso
 | `yolo.shellArgs` | array | `[]` | Extra args passed to the shell before the agent command (ignored on Windows `cmd.exe`) |
 | `yolo.installedCommands` | array (internal) | `[]` | Cache of agent commands detected on PATH — maintained automatically, do not edit by hand |
 | `yolo.lastAgentId` | string (internal) | `""` | Last-selected agent id, so the panel can pre-select it — set automatically |
+| `yolo.nativeChat.agentCliArgs` | object | `{}` | *(since 1.3.0)* Extra CLI args for native chat runs, keyed by agent `id`; overrides built-in non-interactive defaults |
+| `yolo.nativeChat.autoApprove` | boolean | `false` | *(since 1.3.0)* Append the CLI's skip-permissions flag in native chat (off by default) |
+| `yolo.nativeChat.timeoutSeconds` | number | `180` | *(since 1.3.0)* Max wait for a CLI agent invoked from native chat |
+| `yolo.nativeChat.maxOutputChars` | number | `30000` | *(since 1.3.0)* Output cap for native chat CLI results |
 
 Commands:
 
@@ -175,6 +199,7 @@ Commands:
 | `yolo.launchAgent` | Agent YOLO: Launch Agent | status-bar `$(rocket)` button / Command Palette |
 | `yolo.toggleLauncherYolo` | Agent YOLO: Toggle Launcher YOLO Mode | status-bar `Y` button / `Ctrl/Cmd+Alt+Y` |
 | `yolo.toggleLauncherResume` | Agent YOLO: Toggle Launcher Resume Mode | status-bar `R` button / `Ctrl/Cmd+Alt+R` |
+| `yolo.refreshChatAgents` | Agent YOLO: Refresh Chat Agents | Command Palette — re-probe installed CLIs and refresh native-chat agents *(since 1.3.0)* |
 
 ## Build & run (development)
 
@@ -192,6 +217,9 @@ npm test           # unit tests for the link engine
 src/
   extension.ts                 activation + command + view-provider registration
   launcher.ts                   status-bar Launcher: Quick Pick -> new terminal, independent YOLO/Resume toggles, Terminal profiles
+  nativeChat/
+    cliAgentTool.ts             languageModelTools tool that runs the selected CLI headlessly (native chat)
+    agentAvailability.ts        `yolo.agentInstalled.*` context keys: installed-only agent filtering
   agents.ts                    loads the built-in catalog from agents.json + resolveAgents()/getAgentConfigWarnings()
   agentDetector.ts             install detection (resolvePath / canExecute), login shell so rc PATH is honoured
   settings/                    settings.json-backed config (schema in package.json contributes.configuration)
@@ -207,9 +235,11 @@ src/
 media/dist/                    esbuild output (bundled xterm) — referenced by the webview
 media/agents/                 agent logos (PNG)
 media/icons/                  activity-bar / panel icons + Y/R toggle SVGs
+agents/                        generated .agent.md files, one per catalog agent (do not edit by hand)
 scripts/
   ensure-node-pty-exec.cjs     postinstall: chmod node-pty's spawn-helper executable
-test/                          node:test unit tests (linkPatterns / linkParser)
+  generate-native-chat-agents.cjs  regenerates agents/ + contributes.chatAgents from agents.json
+test/                          node:test unit tests (catalog format / native-chat generated files)
 ```
 
 The webview is bundled with esbuild (no CDN) and served from `localResourceRoots` with a strict CSP.
@@ -221,6 +251,7 @@ The webview is bundled with esbuild (no CDN) and served from `localResourceRoots
 3. **Embedded terminal**: `terminalProvider.ts` spawns the agent via node-pty inside a login shell; the PTY output is bridged to the bundled xterm webview, and user input is written back. Each Launch opens a new tab with its own scrollback.
 4. **Clickable links**: the webview's combined link provider scans terminal output with the patterns in `links/` and turns matches into navigable links — file paths open in the editor, type/member links resolve via the workspace-symbol provider (needs a language server), and URLs open in the browser.
 5. **Settings-driven**: `resolveAgents()` merges the `agents.json` built-in catalog with the `yolo.agents` setting by `command` / `id`, and validates `command` / `displayName` / `id` uniqueness (`getAgentConfigWarnings` emits the warnings).
+6. **Native chat** *(since 1.3.0)*: `scripts/generate-native-chat-agents.cjs` runs on every build, emitting one `.agent.md` per catalog agent with `when: yolo.agentInstalled.<id>` and a single allowed tool (`cnsharp.agentyolo/runCliAgent`). `agentAvailability.ts` sets those context keys from the installed set; `cliAgentTool.ts` spawns the CLI headlessly and returns its output. Only Chat view + Local harness consume extension-contributed agents.
 
 ## How to add an agent
 

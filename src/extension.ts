@@ -8,6 +8,8 @@ import { registerLauncher } from "./launcher";
 import { initBuiltInAgents, resolveAgents, getAgentConfigWarnings } from "./agents";
 import { loadCachedBuiltIns, refreshOnStartup } from "./agentCatalog";
 import { canExecute } from "./agentDetector";
+import { registerCliAgentTool } from "./nativeChat/cliAgentTool";
+import { syncNativeChatAgentContext, refreshNativeChatAgents } from "./nativeChat/agentAvailability";
 import * as settings from "./settings/settings";
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -19,6 +21,10 @@ export function activate(context: vscode.ExtensionContext): void {
   // the previous catalog shows instantly before the network refresh completes.
   initBuiltInAgents(context);
   loadCachedBuiltIns(context);
+
+  // Only agents that are actually installed are visible in VS Code native chat.
+  // Re-evaluated after the startup re-probe and whenever `yolo.agents` changes.
+  syncNativeChatAgentContext();
 
   // Structural config problems (duplicate command / name / id) — logged to the
   // console only (no popup), matching ai-agents-terminal-vsc. Surfaced at startup
@@ -36,6 +42,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("yolo") || e.affectsConfiguration("yolo.agents")) {
         warnAgentConfig();
+        syncNativeChatAgentContext();
       }
     })
   );
@@ -61,6 +68,7 @@ export function activate(context: vscode.ExtensionContext): void {
         canExecute
       )
       .then(() => {
+        syncNativeChatAgentContext();
         panel.sendInit();
         AgentManagerPanel.refreshIfOpen();
       })
@@ -83,10 +91,22 @@ export function activate(context: vscode.ExtensionContext): void {
     )
   );
 
+  // Re-probe installed CLIs after an external install/uninstall and refresh the
+  // native chat agent list (which otherwise only updates on restart).
+  context.subscriptions.push(
+    vscode.commands.registerCommand("yolo.refreshChatAgents", () =>
+      refreshNativeChatAgents()
+    )
+  );
+
   // Agent Launcher: status-bar button + Quick Pick that launches an agent in a
   // NEW terminal, with its own (independent) YOLO / Resume toggles. Shares the
   // agent catalog + `yolo.agents` config with the panel above.
   registerLauncher(context);
+
+  // VS Code native chat: the generated `.agent.md` files select a catalog agent
+  // and route the request through this tool to the real CLI binary.
+  registerCliAgentTool(context);
 }
 
 export function deactivate(): void {

@@ -12,6 +12,7 @@ import { resolveAgents, type AgentDef } from "../agents";
 import { findIconFile } from "../manage/icons";
 import { canExecute, resolvePath } from "../agentDetector";
 import * as settings from "../settings/settings";
+import { syncNativeChatAgentContext } from "../nativeChat/agentAvailability";
 import {
   openFileAt,
   resolveType,
@@ -90,7 +91,10 @@ export class YoloViewProvider implements vscode.WebviewViewProvider {
               settings.getCustomTools(),
               canExecute
             )
-            .then(() => this.sendInit());
+            .then(() => {
+              syncNativeChatAgentContext();
+              this.sendInit();
+            });
         }
         this.sendInit();
       }

@@ -22,6 +22,7 @@ AI CLI 智能体（Claude Code、Codex、Cursor CLI、…），并提供 **跳�
 - **Resume 开关**：通过智能体的 `resumeFlag`（如 Claude `-r`、Codex `--resume`）继续上一次会话。
 - **可点击的终端链接**（带去重/优先级）：`路径:行:列`、带引号路径、堆栈帧、裸文件名、Python 回溯、类型名（`com.foo.Bar`）、`Class.member` 引用，以及 `http(s)://` URL。
   （**类型/成员链接需要语言服务器** — 见 [语言支持](#语言支持安装语言服务器以跳转类型成员链接)。）
+- **原生 chat 智能体** *（自 1.3.0 起；需 VS Code 1.106+）*：每个已安装的目录智能体也会以生成的 `.agent.md` 形式出现在 **Chat 视图的 Agent 下拉**中。选中后，请求会通过内置的 language model tool 转交给真正的 CLI 执行，并原样返回其输出。适用范围与用法见 [在 VS Code 原生 chat 中使用智能体](#在-vs-code-原生-chat-中使用智能体自-130-起)。
 - **设置驱动**：智能体配置（跳过标志 / 基础参数 / 续聊标志、全局 YOLO 与 Resume 默认值、shell）都放在 **VS Code 设置** 中 —— 在 `settings.json` 里编辑 `yolo.agents` 及其他 `yolo.*` 设置即可，面板内没有设置界面。（内部扩展 ID/设置保留 `yolo.` 前缀 —— 例如视图是 `yolo.panel`、设置是 `yolo.*` —— 而产品品牌名为 **Agent YOLO**。）
 
 > **面板位置。** 智能体面板默认在 **主侧栏**（左侧活动栏）打开。如需停靠到右侧，右键面板标题选择
@@ -130,6 +131,25 @@ AI CLI 智能体（Claude Code、Codex、Cursor CLI、…），并提供 **跳�
 
 完整的、随时更新的受支持 agent 列表（由 `agents.json` 生成）维护在 [Agent YOLO 家族 README](https://github.com/cnsharp/Agent-YOLO/blob/main/Meta/README.md#supported-agents)。它在各个版本间共享，因此此处不再重复。
 
+### 在 VS Code 原生 chat 中使用智能体（自 1.3.0 起）
+
+在 **VS Code 1.106+** 上，每个在 PATH 上**已安装**的目录智能体都会以 [自定义智能体](https://code.visualstudio.com/docs/copilot/customization/custom-agents) 的形式贡献给 VS Code。生成的 `.agent.md` 通过 `languageModelTools` 工具把请求交给真正的 CLI 二进制 —— 回答来自已安装的 CLI，而不是模型本身。
+
+**适用范围（重要）：**
+- 仅在编辑器 **Chat 视图** + **Local harness** 下生效。Copilot harness 与 Agents 窗口使用 harness 自带的智能体来源，**不会**显示扩展贡献的 agent。
+- Local harness 自 VS Code 1.146 起弃用，计划于 **2027 年 2 月**移除；本特性受该时间线约束。
+- 只有 PATH 上检测到的智能体才会出现。在扩展之外安装/卸载 CLI 后，运行 **`Agent YOLO: Refresh Chat Agents`** 重新探测并刷新下拉列表。
+
+**用法：**
+1. 打开 Chat 视图（`Ctrl/Cmd+Alt+I`）并新建会话。
+2. 在 **Session Target** 中选择 **Local**。VS Code 1.147+ 默认隐藏已弃用的 Local harness —— 在 `settings.json` 中启用：
+   ```json
+   { "chat.editor.localAgent.enabled": true, "chat.defaultToCopilotHarness": false }
+   ```
+3. 从 **Agent** 下拉中选择你的 CLI 智能体（如 `Claude Code`），然后发送请求。
+
+**自定义：** `yolo.nativeChat.agentCliArgs` 按 agent `id` 设置无交互模式参数。内置默认值均来自各 CLI 的 `--help` 或官方文档核实（如 `claude -p`、`codex exec`、`goose run -t`、`hermes chat -q`、`vtcode exec`）；未核实到无交互用法的 agent 不附加额外参数，可在此配置。`yolo.nativeChat.autoApprove`、`timeoutSeconds`、`maxOutputChars` 控制执行行为。`.agent.md` 在每次构建时由 `agents.json` 重新生成（`npm run generate`），无需手动同步。
+
 ## 设置参考
 
 | 设置 | 类型 | 默认值 | 说明 |
@@ -144,12 +164,17 @@ AI CLI 智能体（Claude Code、Codex、Cursor CLI、…），并提供 **跳�
 | `yolo.shellArgs` | array | `[]` | 传给 shell、位于智能体命令之前的额外参数（Windows `cmd.exe` 下忽略） |
 | `yolo.installedCommands` | array（内部） | `[]` | PATH 上检测到的智能体命令缓存 —— 自动维护，请勿手改 |
 | `yolo.lastAgentId` | string（内部） | `""` | 上次选中的智能体 id，便于面板预选 —— 自动设置 |
+| `yolo.nativeChat.agentCliArgs` | object | `{}` | *（自 1.3.0 起）* 原生 chat 运行的额外 CLI 参数，按 agent `id` 配置；覆盖内置无交互模式默认值 |
+| `yolo.nativeChat.autoApprove` | boolean | `false` | *（自 1.3.0 起）* 原生 chat 中追加跳过权限标志（默认关闭） |
+| `yolo.nativeChat.timeoutSeconds` | number | `180` | *（自 1.3.0 起）* 原生 chat 启动 CLI 智能体的最长等待时间 |
+| `yolo.nativeChat.maxOutputChars` | number | `30000` | *（自 1.3.0 起）* 原生 chat 中 CLI 输出长度上限 |
 
 命令：
 
 | 命令 id | 标题 | 触发 |
 |---|---|---|
 | `yolo.openPanel` | Agent YOLO: Open Agents Panel | 活动栏图标 / 命令面板 |
+| `yolo.refreshChatAgents` | Agent YOLO: Refresh Chat Agents | 命令面板 —— 重新探测已安装的 CLI 并刷新原生 chat 智能体 *（自 1.3.0 起）* |
 
 ## 构建与运行（开发）
 
@@ -166,6 +191,9 @@ npm test           # 链接引擎的单元测试
 ```
 src/
   extension.ts                 激活 + 命令 + 视图提供器注册
+  nativeChat/
+    cliAgentTool.ts             languageModelTools 工具：无交互运行选中的 CLI（原生 chat）
+    agentAvailability.ts        `yolo.agentInstalled.*` context key：仅显示已安装的智能体
   agents.ts                    从 agents.json 加载内置目录 + resolveAgents()/getAgentConfigWarnings()
   agentDetector.ts             安装检测（resolvePath / canExecute），登录 shell 以识别 rc PATH
   settings/                    settings.json 驱动的配置（schema 在 package.json contributes.configuration）
@@ -181,9 +209,11 @@ src/
 media/dist/                    esbuild 输出（打包的 xterm）—— 由 webview 引用
 media/agents/                 智能体图标（PNG）
 media/icons/                  活动栏 / 面板图标 + Y/R 切换 SVG
+agents/                        生成的 .agent.md 文件，每个目录智能体一个（请勿手改）
 scripts/
   ensure-node-pty-exec.cjs     postinstall：对 node-pty 的 spawn-helper 设置可执行权限
-test/                          node:test 单元测试（linkPatterns / linkParser）
+  generate-native-chat-agents.cjs  从 agents.json 重新生成 agents/ + contributes.chatAgents
+test/                          node:test 单元测试（目录格式 / 原生 chat 生成文件）
 ```
 
 webview 通过 esbuild 打包（无 CDN），并以严格 CSP 从 `localResourceRoots` 提供。
@@ -195,6 +225,7 @@ webview 通过 esbuild 打包（无 CDN），并以严格 CSP 从 `localResource
 3. **内嵌终端**：`terminalProvider.ts` 在登录 shell 中通过 node-pty 启动智能体；PTY 输出桥接到打包的 xterm webview，用户输入写回。每次 Launch 都打开带独立滚动缓冲的新标签页。
 4. **可点击链接**：webview 的组合链接提供器用 `links/` 中的模式扫描终端输出，把匹配项变成可跳转链接 —— 文件路径在编辑器中打开，类型/成员链接通过 workspace-symbol 提供器解析（需语言服务器），URL 在浏览器中打开。
 5. **设置驱动**：`resolveAgents()` 按 `command` / `id` 把 `agents.json` 内置目录与 `yolo.agents` 设置合并，并校验 `command` / `displayName` / `id` 的唯一性（`getAgentConfigWarnings` 输出告警）。
+6. **原生 chat** *（自 1.3.0 起）*：每次构建都会运行 `scripts/generate-native-chat-agents.cjs`，为每个目录智能体生成一个 `.agent.md`，带 `when: yolo.agentInstalled.<id>` 且只允许一个工具（`cnsharp.agentyolo/runCliAgent`）。`agentAvailability.ts` 根据已安装集合设置这些 context key；`cliAgentTool.ts` 无交互启动 CLI 并返回其输出。只有 Chat 视图 + Local harness 会读取扩展贡献的 agent。
 
 ## 如何新增一个智能体
 
