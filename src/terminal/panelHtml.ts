@@ -58,7 +58,10 @@ export function renderPanelHtml(
     #tabs { flex: 1 1 auto; display: flex; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
     .tab { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; min-width: 160px; max-width: 220px; padding: 3px 4px 3px 8px; cursor: pointer; border-right: 1px solid var(--vscode-panel-border, #333); color: var(--vscode-tab-inactiveForeground, var(--vscode-foreground, #cccccc)); background: transparent; }
     .tab:hover { background: var(--vscode-tab-hoverBackground, rgba(128,128,128,0.15)); }
-    .tab.active { background: var(--vscode-tab-activeBackground, #1e1e1e); color: var(--vscode-tab-activeForeground, var(--vscode-foreground, #cccccc)); }
+    /* tab-activeBackground usually equals the side-bar background, so the selected tab is
+       invisible. Use the list active-selection colors (defined in both light and dark themes)
+       plus an inset underline for an unambiguous highlight in either theme. */
+    .tab.active { background: var(--vscode-list-activeSelectionBackground, var(--vscode-tab-activeBackground, rgba(128,128,128,0.25))); color: var(--vscode-list-activeSelectionForeground, var(--vscode-tab-activeForeground, var(--vscode-foreground, #cccccc))); box-shadow: inset 0 -2px 0 var(--vscode-focusBorder, #007fd4); font-weight: 600; }
     .tab .tname { flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
     .tab .logo { width: 14px; height: 14px; flex: 0 0 auto; object-fit: contain; border-radius: 3px; }
     .tab .tclose { flex: 0 0 auto; width: 16px; height: 16px; padding: 0; border: 0; background: transparent; color: inherit; opacity: 0.6; font-size: 12px; line-height: 1; cursor: pointer; }
