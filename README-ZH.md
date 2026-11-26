@@ -165,7 +165,7 @@ AI CLI 智能体（Claude Code、Codex、Cursor CLI、…），并提供 **跳�
 | `yolo.installedCommands` | array（内部） | `[]` | PATH 上检测到的智能体命令缓存 —— 自动维护，请勿手改 |
 | `yolo.lastAgentId` | string（内部） | `""` | 上次选中的智能体 id，便于面板预选 —— 自动设置 |
 | `yolo.nativeChat.agentCliArgs` | object | `{}` | *（自 1.3.0 起）* 原生 chat 运行的额外 CLI 参数，按 agent `id` 配置；覆盖内置无交互模式默认值 |
-| `yolo.nativeChat.autoApprove` | boolean | `false` | *（自 1.3.0 起）* 原生 chat 中追加跳过权限标志（默认关闭） |
+| `yolo.nativeChat.autoApprove` | boolean | `true` | *（自 1.3.0 起）* 原生 chat 中追加跳过权限标志，以便无 TTY 下也能正常工作（默认开启；请仅在信任的工作区使用） |
 | `yolo.nativeChat.timeoutSeconds` | number | `180` | *（自 1.3.0 起）* 原生 chat 启动 CLI 智能体的最长等待时间 |
 | `yolo.nativeChat.maxOutputChars` | number | `30000` | *（自 1.3.0 起）* 原生 chat 中 CLI 输出长度上限 |
 

@@ -186,7 +186,7 @@ On **VS Code 1.106+**, every catalog agent that is **installed on PATH** is cont
 | `yolo.installedCommands` | array (internal) | `[]` | Cache of agent commands detected on PATH — maintained automatically, do not edit by hand |
 | `yolo.lastAgentId` | string (internal) | `""` | Last-selected agent id, so the panel can pre-select it — set automatically |
 | `yolo.nativeChat.agentCliArgs` | object | `{}` | *(since 1.3.0)* Extra CLI args for native chat runs, keyed by agent `id`; overrides built-in non-interactive defaults |
-| `yolo.nativeChat.autoApprove` | boolean | `false` | *(since 1.3.0)* Append the CLI's skip-permissions flag in native chat (off by default) |
+| `yolo.nativeChat.autoApprove` | boolean | `true` | *(since 1.3.0)* Append the CLI's skip-permissions flag in native chat so it works without a TTY for approvals (on by default; only use in trusted workspaces) |
 | `yolo.nativeChat.timeoutSeconds` | number | `180` | *(since 1.3.0)* Max wait for a CLI agent invoked from native chat |
 | `yolo.nativeChat.maxOutputChars` | number | `30000` | *(since 1.3.0)* Output cap for native chat CLI results |
 

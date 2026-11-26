@@ -51,5 +51,9 @@
   "status.install.failed": "{0} 安装失败：{1}",
   "status.install.unverified": "{0} 安装报告成功，但“{1}”无法运行 —— 请检查 PATH",
   "status.install.opened": "已打开 {0} 的下载页",
-  "status.noInstallUrl": "未定义 {0} 的下载页。"
+  "status.noInstallUrl": "未定义 {0} 的下载页。",
+
+  "nativeChat.invocation": "正在用 {0} 处理你的请求",
+  "nativeChat.confirm.title": "以自动批准模式运行 {0}",
+  "nativeChat.confirm.message": "该 CLI 将自动批准文件修改和命令执行，不再逐项询问。请仅在信任的工作区继续。"
 }

@@ -8,6 +8,7 @@
 import * as vscode from "vscode";
 import { spawn } from "child_process";
 import { resolveAgents, AgentDef } from "../agents";
+import { t } from "../l10n";
 
 export const CLI_AGENT_TOOL_NAME = "agentyolo_runCliAgent";
 const CONFIG_SECTION = "yolo.nativeChat";
@@ -179,7 +180,20 @@ class CliAgentTool implements vscode.LanguageModelTool<RunCliAgentInput> {
   prepareInvocation(options: vscode.LanguageModelToolInvocationPrepareOptions<RunCliAgentInput>) {
     const agent = findAgent(options.input.agent);
     const name = agent?.displayName ?? options.input.agent ?? "CLI agent";
-    return { invocationMessage: `Running ${name} on your request` };
+    const auto = config<boolean>("autoApprove", true);
+    return {
+      invocationMessage: t("nativeChat.invocation", name),
+      // When the CLI's own approvals are bypassed, say so in the confirmation
+      // dialog so the user knows what the Allow button actually authorizes.
+      ...(auto
+        ? {
+            confirmationMessages: {
+              title: t("nativeChat.confirm.title", name),
+              message: t("nativeChat.confirm.message"),
+            },
+          }
+        : {}),
+    };
   }
 
   async invoke(
